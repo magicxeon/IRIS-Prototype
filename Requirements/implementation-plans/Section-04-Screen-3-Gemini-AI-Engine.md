@@ -7,7 +7,7 @@
 
 ## 2. API Specifications & Data Contracts (ข้อกำหนดทางเทคนิค)
 
-เพื่อรองรับการเปลี่ยนข้อความแสดงสถานะอย่างละเอียดขณะรอคอยวิเคราะห์ (เช่น *"กำลังสกัดสูตรคำนวณ..."*) ระบบจะพัฒนา Endpoint หลังบ้านให้แยกการประมวลผลย่อยเป็นคำร้องขอลำดับขั้นตอน (Sequential API Requests) โดยฝั่งหน้าจอ (Frontend) จะทำการส่งคำร้องถัดไปเมื่อคำร้องก่อนหน้าสำเร็จ:
+เพื่อรองรับการเปลี่ยนข้อความแสดงสถานะอย่างละเอียดขณะรอคอยวิเคราะห์ (เช่น *"กำลังสกัดสูตรคำนวณ..."*) และการเช็คสุขภาพการเชื่อมต่อ API ระบบจะพัฒนา Endpoint หลังบ้านดังต่อไปนี้:
 
 ### 2.1 API Endpoint: เรียกสกัดรายส่วนงาน (Sequential Endpoints)
 * **Method:** `POST`
@@ -25,6 +25,26 @@
     // ข้อมูล JSON สเปกที่ AI สกัดได้ตามข้อกำหนด BRS หน้า 4
   },
   "message": "AI สกัดวิเคราะห์ส่วนงาน landingPage สำเร็จ"
+}
+```
+
+### 2.2 API Endpoint: ตรวจสุขภาพเชื่อมต่อ Gemini API (Gemini Connection Healthcheck)
+* **Method:** `GET`
+* **Path:** `/api/healthcheck/gemini`
+* **Response Body (Success 200 OK):**
+```json
+{
+  "success": true,
+  "status": "connected",
+  "message": "การเชื่อมต่อกับ Gemini API สำเร็จ คีย์ถูกต้องและพร้อมใช้งาน"
+}
+```
+* **Response Body (Error 500/502 Service Unavailable):**
+```json
+{
+  "success": false,
+  "status": "disconnected",
+  "error": "API Key ไม่ถูกต้อง หรือไม่สามารถเชื่อมต่อเครื่องบริการของ Google ได้"
 }
 ```
 
@@ -137,6 +157,45 @@ async function analyzeSectionController(req, res) {
     return res.status(500).json({ success: false, message: "ระบบประมวลผล AI ของ Gemini ขัดข้อง ไม่สามารถสกัดข้อกำหนดได้" });
   }
 }
+
+/**
+ * API Controller สำหรับทดสอบเชื่อมต่อและตรวจสอบคีย์ Gemini API (Healthcheck)
+ */
+async function testGeminiConnectionController(req, res) {
+  try {
+    // 1. ตรวจสอบเบื้องต้นว่ามีคีย์ติดตั้งอยู่ในสภาพแวดล้อมหรือไม่
+    if (!process.env.GEMINI_API_KEY) {
+      return res.status(500).json({
+        success: false,
+        status: "disconnected",
+        error: "ไม่พบคีย์ GEMINI_API_KEY ในไฟล์กำหนดสภาพแวดล้อม (.env)"
+      });
+    }
+
+    // 2. เรียกใช้งานโมเดลขนาดเล็กเพื่อทดสอบการตอบสนองแบบเบาบาง (Lightweight Ping request)
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    const result = await model.generateContent("ping");
+    const responseText = result.response.text();
+
+    // 3. ตรวจสอบว่าส่งข้อความกลับมาได้สำเร็จหรือไม่
+    if (responseText) {
+      return res.status(200).json({
+        success: true,
+        status: "connected",
+        message: "การเชื่อมต่อกับ Gemini API สำเร็จ คีย์ถูกต้องและพร้อมใช้งาน"
+      });
+    } else {
+      throw new Error("ไม่มีข้อความตอบรับจากโมเดล");
+    }
+  } catch (error) {
+    console.error("Gemini API Connection Failed:", error);
+    return res.status(502).json({
+      success: false,
+      status: "disconnected",
+      error: `ไม่สามารถเชื่อมต่อได้: ${error.message}`
+    });
+  }
+}
 ```
 
 ---
@@ -168,3 +227,16 @@ async function analyzeSectionController(req, res) {
 * **When** คำร้องขอ API สุดท้ายทำงานเสร็จสิ้น
 * **Then** ข้อมูลความต้องการประกันภัยที่สกัดได้ทั้งหมด (Landing, Quote, Calc, Proposal) ต้องได้รับการบันทึกอยู่ภายใต้ฟิลด์ `extractedRequirements` ของโปรเจกต์นั้นใน `projects.json`
 * **And** สถานะ `"status"` ของโครงการต้องถูกปรับเปลี่ยนค่าเป็น `"analyzed"` อย่างถูกต้อง
+
+#### Scenario 3: การตรวจเช็คสุขภาพความเชื่อมต่อของ Gemini API สำเร็จ (UAT: Gemini API Healthcheck Success)
+* **Given** ระบบทำการตั้งค่าสภาพแวดล้อมโดยระบุ `GEMINI_API_KEY` ที่ถูกต้องลงในไฟล์ `.env`
+* **When** มีการยิงคำร้องของ Endpoint `GET /api/healthcheck/gemini` เข้ามายังหลังบ้าน
+* **Then** ผลลัพธ์ตอบกลับจาก API ต้องแสดงสถานะ Http Code เป็น `200 OK`
+* **And** ภายในข้อมูลตอบกลับแบบ JSON ต้องมีฟิลด์ `"status"` เป็น `"connected"` และมีฟิลด์ `"success"` เป็น `true`
+
+#### Scenario 4: การแจ้งสถานะผิดพลาดเมื่อคีย์ของ API ไม่ถูกต้อง (UAT: Gemini API Healthcheck Failed)
+* **Given** ระบบทำงานโดยคีย์ `GEMINI_API_KEY` ในไฟล์ `.env` ไม่ถูกต้องหรือไม่ได้ป้อนค่าไว้
+* **When** มีการยิงคำร้องของ Endpoint `GET /api/healthcheck/gemini` เข้ามา
+* **Then** ผลลัพธ์ตอบกลับจาก API ต้องแสดงสถานะ Http Code เป็น `500` หรือ `502`
+* **And** ข้อมูลตอบกลับแบบ JSON ต้องมีฟิลด์ `"status"` เป็น `"disconnected"` และมีฟิลด์ `"success"` เป็น `false`
+
