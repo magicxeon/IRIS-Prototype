@@ -7,6 +7,7 @@ document.addEventListener('DOMContentLoaded', () => {
     compliance: null
   };
   let currentProjectData = null;
+  let extractionSchema = null;
   let searchTerm = '';
   let activeStatusFilter = 'all';
 
@@ -84,8 +85,6 @@ document.addEventListener('DOMContentLoaded', () => {
   const loadingOverlay = document.getElementById('loading-overlay');
   const loadingStatusText = document.getElementById('loading-status-text');
   const loadingTitleText = document.getElementById('loading-title-text');
-  const analysisCards = document.querySelectorAll('.analysis-card');
-
   // Screen 4 Selectors
   const screen4 = document.getElementById('screen-4');
   const projectInfoSubtitleS4 = document.getElementById('project-info-subtitle-s4');
@@ -96,8 +95,6 @@ document.addEventListener('DOMContentLoaded', () => {
   const btnExportJira = document.getElementById('btn-export-jira');
   const btnExportWord = document.getElementById('btn-export-word');
   const btnApproveSpec = document.getElementById('btn-approve-spec');
-  const tabButtons = document.querySelectorAll('#tabs-bar-s4 .tab-link');
-  const tabPanels = document.querySelectorAll('.tab-content-panel');
 
   // -------------------------------------------------------------
   // Custom Alert Modal Logic
@@ -869,6 +866,60 @@ document.addEventListener('DOMContentLoaded', () => {
   // -------------------------------------------------------------
   // Screen 3: Output Configuration & AI Prompting Logic
   // -------------------------------------------------------------
+  const loadExtractionSchema = async () => {
+    try {
+      const res = await fetch('/api/config/schema');
+      if (res.ok) {
+        extractionSchema = await res.json();
+        renderScreen3Grid();
+      } else {
+        console.error("Failed to load schema");
+      }
+    } catch (err) {
+      console.error("Error fetching schema:", err);
+    }
+  };
+
+  const renderScreen3Grid = () => {
+    const container = document.getElementById('analysis-grid-container');
+    if (!container || !extractionSchema) return;
+    
+    container.innerHTML = extractionSchema.sections.map(sec => `
+      <div class="analysis-card" data-section="${sec.key}" tabindex="0" role="checkbox" aria-checked="false" style="cursor: pointer;">
+        <div class="analysis-card-header">
+          <span class="analysis-card-icon">${sec.icon}</span>
+          <h3 class="analysis-card-title">${sec.title}</h3>
+        </div>
+        <p class="analysis-card-desc">${sec.desc}</p>
+        <div class="analysis-card-checkbox-wrapper" style="margin-top: 1rem; pointer-events: none;">
+          <input type="checkbox" id="chk-${sec.key}" class="analysis-checkbox" tabindex="-1">
+          <label for="chk-${sec.key}" class="checkbox-custom-label" style="font-weight: 600;">เลือกหัวข้อนี้</label>
+        </div>
+      </div>
+    `).join('');
+
+    // Bind event listeners to newly created cards
+    const cards = container.querySelectorAll('.analysis-card');
+    cards.forEach(card => {
+      const chk = card.querySelector('.analysis-checkbox');
+      card.addEventListener('click', () => {
+        if (chk.disabled) return;
+        const isSelected = card.classList.toggle('selected');
+        chk.checked = isSelected;
+        updateAnalyzeButtonState();
+      });
+      card.addEventListener('keydown', (e) => {
+        if (chk.disabled) return;
+        if (e.key === ' ' || e.key === 'Enter') {
+          e.preventDefault();
+          const isSelected = card.classList.toggle('selected');
+          chk.checked = isSelected;
+          updateAnalyzeButtonState();
+        }
+      });
+    });
+  };
+
   const loadScreen3Details = async () => {
     if (!currentProjectId) {
       showScreen(1);
@@ -885,20 +936,22 @@ document.addEventListener('DOMContentLoaded', () => {
         
         // ตรวจสอบข้อมูลความต้องการเดิมว่ามีอยู่หรือไม่ เพื่อเลือกตัวเลือกเดิมให้อัตโนมัติ
         const reqs = project.extractedRequirements || {};
-        const sections = ['landingPage', 'quickQuote', 'productCalculation', 'saleProposal'];
         
-        sections.forEach(sec => {
-          const card = document.querySelector(`.analysis-card[data-section="${sec}"]`);
-          const chk = document.getElementById(`chk-${sec}`);
-          
-          if (reqs[sec]) {
-            card.classList.add('selected');
-            chk.checked = true;
-          } else {
-            card.classList.remove('selected');
-            chk.checked = false;
-          }
-        });
+        if (extractionSchema) {
+          extractionSchema.sections.forEach(sec => {
+            const card = document.querySelector(`.analysis-card[data-section="${sec.key}"]`);
+            const chk = document.getElementById(`chk-${sec.key}`);
+            if (card && chk) {
+              if (reqs[sec.key]) {
+                card.classList.add('selected');
+                chk.checked = true;
+              } else {
+                card.classList.remove('selected');
+                chk.checked = false;
+              }
+            }
+          });
+        }
         
         updateAnalyzeButtonState();
       } else {
@@ -917,31 +970,6 @@ document.addEventListener('DOMContentLoaded', () => {
     btnAnalyzeGemini.disabled = selectedCount === 0;
   };
 
-  // ผูกการคลิกเลือกกล่องการ์ดวิเคราะห์
-  analysisCards.forEach(card => {
-    const chk = card.querySelector('.analysis-checkbox');
-    const secName = card.getAttribute('data-section');
-
-    card.addEventListener('click', () => {
-      // ตรวจสอบว่าโดน Lock หรือไม่
-      if (chk.disabled) return;
-
-      const isSelected = card.classList.toggle('selected');
-      chk.checked = isSelected;
-      updateAnalyzeButtonState();
-    });
-
-    card.addEventListener('keydown', (e) => {
-      if (chk.disabled) return;
-      if (e.key === ' ' || e.key === 'Enter') {
-        e.preventDefault();
-        const isSelected = card.classList.toggle('selected');
-        chk.checked = isSelected;
-        updateAnalyzeButtonState();
-      }
-    });
-  });
-
   btnBackToS2.addEventListener('click', () => {
     showScreen(2);
   });
@@ -956,8 +984,11 @@ document.addEventListener('DOMContentLoaded', () => {
     // 1. ตรวจสอบการเชื่อมต่อ Gemini API ก่อนเริ่มทำงาน
     btnAnalyzeGemini.disabled = true;
     btnBackToS2.disabled = true;
-    analysisCards.forEach(card => {
-      card.querySelector('.analysis-checkbox').disabled = true;
+    
+    const dynamicCards = document.querySelectorAll('.analysis-card');
+    dynamicCards.forEach(card => {
+      const chk = card.querySelector('.analysis-checkbox');
+      if (chk) chk.disabled = true;
       card.style.cursor = 'not-allowed';
     });
 
@@ -966,22 +997,32 @@ document.addEventListener('DOMContentLoaded', () => {
     loadingTitleText.textContent = "กำลังวิเคราะห์ข้อมูล";
     loadingStatusText.textContent = "กำลังเริ่มตรวจเช็คระบบการเชื่อมต่อ Gemini API...";
 
-    // รีเซ็ตสถานะหัวข้อทั้งหมดในหน้ากากรอโหลด
-    const sections = ['landingPage', 'quickQuote', 'productCalculation', 'saleProposal'];
-    sections.forEach(sec => {
-      const stepDiv = document.getElementById(`loading-step-${sec}`);
-      const indicator = stepDiv.querySelector('.step-icon-indicator');
-      
-      stepDiv.className = ''; // ล้าง CSS classes
-      const card = document.querySelector(`.analysis-card[data-section="${sec}"]`);
-      
-      if (card.classList.contains('selected')) {
-        indicator.textContent = '⚪';
-      } else {
-        indicator.textContent = '➖';
-        stepDiv.style.opacity = '0.5';
+    // ล้างและสร้างหัวข้อขั้นตอนใหม่ในหน้ากากรอโหลดตาม Schema แบบ Dynamic
+    const loadingStepsContainer = document.getElementById('loading-steps-container');
+    if (loadingStepsContainer) {
+      loadingStepsContainer.innerHTML = '';
+      if (extractionSchema) {
+        extractionSchema.sections.forEach((sec, idx) => {
+          const stepDiv = document.createElement('div');
+          stepDiv.id = `loading-step-${sec.key}`;
+          stepDiv.style.display = 'flex';
+          stepDiv.style.alignItems = 'center';
+          stepDiv.style.justifyContent = 'space-between';
+          
+          const card = document.querySelector(`.analysis-card[data-section="${sec.key}"]`);
+          const isSelected = card && card.classList.contains('selected');
+          
+          stepDiv.innerHTML = `
+            <span>${idx + 1}. สกัดข้อมูล${sec.title}</span>
+            <span class="step-icon-indicator" style="font-size: 1.1rem; font-weight: bold; margin-left: 0.5rem;">${isSelected ? '⚪' : '➖'}</span>
+          `;
+          if (!isSelected) {
+            stepDiv.style.opacity = '0.5';
+          }
+          loadingStepsContainer.appendChild(stepDiv);
+        });
       }
-    });
+    }
 
     try {
       // ยิง Healthcheck เช็คคีย์ก่อน
@@ -992,53 +1033,38 @@ document.addEventListener('DOMContentLoaded', () => {
         throw new Error(checkData.error || "ไม่สามารถเชื่อมต่อ Gemini API ได้ คีย์ไม่ถูกต้องหรืออินเทอร์เน็ตขัดข้อง");
       }
 
-      // 2. รัน Sequential AJAX request ประมวลผลทีละหัวข้อแบบลูกโซ่ (Sequential Chain)
-      const messageMap = {
-        landingPage: {
-          loading: "กำลังวิเคราะห์สกัดข้อมูลคุณสมบัติผลิตภัณฑ์ (Landing Page Spec)...",
-          success: "สกัดข้อมูลผลิตภัณฑ์เสร็จสิ้น!"
-        },
-        quickQuote: {
-          loading: "กำลังสแกนวิเคราะห์เกณฑ์ข้อจำกัดผู้เอาประกันภัย (Validation constraints)...",
-          success: "วิเคราะห์เกณฑ์เสนอขายเสร็จสิ้น!"
-        },
-        productCalculation: {
-          loading: "กำลังสกัดสูตรคำนวณ ตารางส่วนลดเบี้ย และอัตราเบี้ย (Premium formulas)...",
-          success: "สกัดสูตรเบี้ยประกันภัยเสร็จสิ้น!"
-        },
-        saleProposal: {
-          loading: "กำลังสืบค้นแผนผังตารางมูลค่าเวนคืน ลดหย่อนภาษี และข้อกฎหมาย ม. 865...",
-          success: "สกัดตารางมูลค่าเวนคืนและกฎเกณฑ์เสร็จสิ้น!"
+      // 2. รัน Sequential AJAX request ประมวลผลทีละหัวข้อแบบลูกโซ่ (Sequential Chain) จาก Schema
+      if (extractionSchema) {
+        for (const sec of extractionSchema.sections) {
+          const card = document.querySelector(`.analysis-card[data-section="${sec.key}"]`);
+          if (!card || !card.classList.contains('selected')) continue; // ข้ามตัวเลือกที่ไม่ถูกเลือก
+
+          const stepDiv = document.getElementById(`loading-step-${sec.key}`);
+          const indicator = stepDiv ? stepDiv.querySelector('.step-icon-indicator') : null;
+
+          // เปลี่ยนหัวข้อเป็น Active
+          if (stepDiv) stepDiv.classList.add('active-step');
+          if (indicator) indicator.textContent = '⏳';
+          loadingStatusText.textContent = `กำลังวิเคราะห์สกัดข้อมูล${sec.title}...`;
+
+          // เรียก API หลังบ้านสกัดข้อมูล
+          const res = await fetch(`/api/projects/${currentProjectId}/analyze/${sec.key}`, {
+            method: 'POST'
+          });
+          const data = await res.json();
+
+          if (!res.ok || !data.success) {
+            if (indicator) indicator.textContent = '❌';
+            throw new Error(data.message || `เกิดข้อผิดพลาดในการประมวลผลหัวข้อ ${sec.title}`);
+          }
+
+          // อัปเดตเมื่อวิเคราะห์หัวข้อนี้สำเร็จ
+          if (stepDiv) {
+            stepDiv.classList.remove('active-step');
+            stepDiv.classList.add('completed-step');
+          }
+          if (indicator) indicator.textContent = '✅';
         }
-      };
-
-      for (const sec of sections) {
-        const card = document.querySelector(`.analysis-card[data-section="${sec}"]`);
-        if (!card.classList.contains('selected')) continue; // ข้ามตัวเลือกที่ไม่ถูกเลือก
-
-        const stepDiv = document.getElementById(`loading-step-${sec}`);
-        const indicator = stepDiv.querySelector('.step-icon-indicator');
-
-        // เปลี่ยนหัวข้อเป็น Active
-        stepDiv.classList.add('active-step');
-        indicator.textContent = '⏳';
-        loadingStatusText.textContent = messageMap[sec].loading;
-
-        // เรียก API หลังบ้านสกัดข้อมูล
-        const res = await fetch(`/api/projects/${currentProjectId}/analyze/${sec}`, {
-          method: 'POST'
-        });
-        const data = await res.json();
-
-        if (!res.ok || !data.success) {
-          indicator.textContent = '❌';
-          throw new Error(data.message || `เกิดข้อผิดพลาดในการประมวลผลหัวข้อ ${sec}`);
-        }
-
-        // อัปเดตเมื่อวิเคราะห์หัวข้อนี้สำเร็จ
-        stepDiv.classList.remove('active-step');
-        stepDiv.classList.add('completed-step');
-        indicator.textContent = '✅';
       }
 
       // เสร็จสิ้นทั้งหมด
@@ -1064,8 +1090,10 @@ document.addEventListener('DOMContentLoaded', () => {
       // คืนค่า UI controls ทั้งหมดกลับมาทำงาน
       btnAnalyzeGemini.disabled = false;
       btnBackToS2.disabled = false;
-      analysisCards.forEach(card => {
-        card.querySelector('.analysis-checkbox').disabled = false;
+      const dynamicCards = document.querySelectorAll('.analysis-card');
+      dynamicCards.forEach(card => {
+        const chk = card.querySelector('.analysis-checkbox');
+        if (chk) chk.disabled = false;
         card.style.cursor = 'pointer';
       });
       updateAnalyzeButtonState();
@@ -1075,18 +1103,155 @@ document.addEventListener('DOMContentLoaded', () => {
   // -------------------------------------------------------------
   // Screen 4: BSA Editor & Approval Logic
   // -------------------------------------------------------------
-  tabButtons.forEach(btn => {
-    btn.addEventListener('click', () => {
-      tabButtons.forEach(b => b.classList.remove('active'));
-      tabPanels.forEach(p => p.classList.remove('active'));
-
+  // Event delegation for Screen 4 Tab buttons switching
+  const tabsBarS4 = document.getElementById('tabs-bar-s4');
+  if (tabsBarS4) {
+    tabsBarS4.addEventListener('click', (e) => {
+      const btn = e.target.closest('.tab-link');
+      if (!btn) return;
+      
+      const tabId = btn.getAttribute('data-tab');
+      
+      // Update active tab buttons styling
+      tabsBarS4.querySelectorAll('.tab-link').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
-      const targetPanel = document.getElementById(btn.getAttribute('data-tab'));
-      if (targetPanel) {
-        targetPanel.classList.add('active');
+      
+      // Update active tab panel display
+      const container = document.getElementById('tab-contents-container');
+      if (container) {
+        container.querySelectorAll('.tab-content-panel').forEach(p => p.classList.remove('active'));
+        const targetPanel = document.getElementById(tabId);
+        if (targetPanel) {
+          targetPanel.classList.add('active');
+        }
       }
     });
-  });
+  }
+
+  // Mapping helpers between UI flat rows and DB structured requirements
+  const mapDataToFlatRows = (sectionKey, fieldKey, rawData) => {
+    if (!rawData) return [];
+    
+    // Quick Quote - validationRules (Object of Objects)
+    if (sectionKey === 'quickQuote' && fieldKey === 'validationRules') {
+      return Object.keys(rawData).map(k => ({
+        variable: k,
+        min: rawData[k].min !== undefined ? rawData[k].min : '',
+        max: rawData[k].max !== undefined ? rawData[k].max : '',
+        dataType: rawData[k].dataType || '',
+        unit: rawData[k].unit || '',
+        errorMessage: rawData[k].errorMessage || ''
+      }));
+    }
+    
+    // Product Calculation - premiumRateMatrix (Object of Objects)
+    if (sectionKey === 'productCalculation' && fieldKey === 'premiumRateMatrix') {
+      return Object.keys(rawData).map(age => ({
+        age: age,
+        term_5: rawData[age].term_5 !== undefined ? rawData[age].term_5 : '',
+        term_10: rawData[age].term_10 !== undefined ? rawData[age].term_10 : '',
+        term_15: rawData[age].term_15 !== undefined ? rawData[age].term_15 : '',
+        term_99: rawData[age].term_99 !== undefined ? rawData[age].term_99 : ''
+      }));
+    }
+    
+    // Sale Proposal - cashValueRates (Array of nested Objects)
+    if (sectionKey === 'saleProposal' && fieldKey === 'cashValueRates') {
+      return rawData.map(item => {
+        const rates = item.ratesByAge || {};
+        return {
+          policyYear: item.policyYear !== undefined ? item.policyYear : '',
+          age_1: rates.age_1 !== undefined ? rates.age_1 : '',
+          age_30: rates.age_30 !== undefined ? rates.age_30 : '',
+          age_44: rates.age_44 !== undefined ? rates.age_44 : '',
+          age_60: rates.age_60 !== undefined ? rates.age_60 : ''
+        };
+      });
+    }
+    
+    // Default: already flat array (e.g. keyBenefits, ridersList, discountTiers)
+    return Array.isArray(rawData) ? rawData : [];
+  };
+
+  const mapFlatRowsToData = (sectionKey, fieldKey, flatRows, originalData) => {
+    // Quick Quote - validationRules (Convert back to Object of Objects)
+    if (sectionKey === 'quickQuote' && fieldKey === 'validationRules') {
+      const result = {};
+      flatRows.forEach(row => {
+        const varName = row.variable;
+        if (varName) {
+          result[varName] = {
+            min: isNaN(parseInt(row.min)) ? 0 : parseInt(row.min),
+            max: isNaN(parseInt(row.max)) ? 0 : parseInt(row.max),
+            dataType: row.dataType || '',
+            unit: row.unit || '',
+            errorMessage: row.errorMessage || ''
+          };
+        }
+      });
+      return result;
+    }
+    
+    // Product Calculation - premiumRateMatrix (Convert back to Object of Objects)
+    if (sectionKey === 'productCalculation' && fieldKey === 'premiumRateMatrix') {
+      const result = {};
+      flatRows.forEach(row => {
+        const age = row.age;
+        if (age) {
+          result[age] = {
+            term_5: isNaN(parseFloat(row.term_5)) ? 0 : parseFloat(row.term_5),
+            term_10: isNaN(parseFloat(row.term_10)) ? 0 : parseFloat(row.term_10),
+            term_15: isNaN(parseFloat(row.term_15)) ? 0 : parseFloat(row.term_15),
+            term_99: isNaN(parseFloat(row.term_99)) ? 0 : parseFloat(row.term_99)
+          };
+        }
+      });
+      return result;
+    }
+    
+    // Sale Proposal - cashValueRates (Convert back to Array of nested Objects)
+    if (sectionKey === 'saleProposal' && fieldKey === 'cashValueRates') {
+      return flatRows.map(row => ({
+        policyYear: isNaN(parseInt(row.policyYear)) ? 0 : parseInt(row.policyYear),
+        ratesByAge: {
+          age_1: isNaN(parseFloat(row.age_1)) ? 0 : parseFloat(row.age_1),
+          age_30: isNaN(parseFloat(row.age_30)) ? 0 : parseFloat(row.age_30),
+          age_44: isNaN(parseFloat(row.age_44)) ? 0 : parseFloat(row.age_44),
+          age_60: isNaN(parseFloat(row.age_60)) ? 0 : parseFloat(row.age_60)
+        }
+      }));
+    }
+
+    // Key benefits and discount tiers should have typed values if parsed
+    if (sectionKey === 'landingPage' && fieldKey === 'keyBenefits') {
+      return flatRows.map(row => ({
+        title: row.title || '',
+        description: row.description || ''
+      }));
+    }
+
+    if (sectionKey === 'productCalculation' && fieldKey === 'discountTiers') {
+      return flatRows.map(row => ({
+        minSA: isNaN(parseFloat(row.minSA)) ? 0 : parseFloat(row.minSA),
+        maxSA: isNaN(parseFloat(row.maxSA)) ? 0 : parseFloat(row.maxSA),
+        rateDiscount: isNaN(parseFloat(row.rateDiscount)) ? 0 : parseFloat(row.rateDiscount)
+      }));
+    }
+
+    if (sectionKey === 'supportedRiders' && fieldKey === 'ridersList') {
+      return flatRows.map(row => ({
+        riderName: row.riderName || '',
+        riderType: row.riderType || '',
+        entryAgeMin: isNaN(parseInt(row.entryAgeMin)) ? 0 : parseInt(row.entryAgeMin),
+        entryAgeMax: isNaN(parseInt(row.entryAgeMax)) ? 0 : parseInt(row.entryAgeMax),
+        renewalAgeLimit: isNaN(parseInt(row.renewalAgeLimit)) ? 0 : parseInt(row.renewalAgeLimit),
+        renewalNote: row.renewalNote || ''
+      }));
+    }
+    
+    // Default: flat rows array
+    return flatRows;
+  };
 
   const loadScreen4Details = async () => {
     if (!currentProjectId) {
@@ -1104,41 +1269,9 @@ document.addEventListener('DOMContentLoaded', () => {
         
         const reqs = currentProjectData.extractedRequirements || {};
         const isApproved = currentProjectData.status === 'approved';
+        const canEdit = !isApproved;
 
-        // 1. ตรวจสอบสถานะการเรนเดอร์แท็บ (ซ่อนแท็บที่ไม่มีข้อมูล)
-        const sections = ['landingPage', 'quickQuote', 'productCalculation', 'saleProposal'];
-        let firstVisibleTab = null;
-
-        sections.forEach(sec => {
-          const tabBtn = document.getElementById(`tab-btn-${sec}`);
-          const panel = document.getElementById(`tab-${sec}`);
-          
-          if (reqs[sec]) {
-            tabBtn.style.display = 'inline-block';
-            if (!firstVisibleTab) firstVisibleTab = sec;
-          } else {
-            tabBtn.style.display = 'none';
-            panel.classList.remove('active');
-          }
-        });
-
-        // เปิดเฉพาะแท็บแรกที่มีข้อมูลจริง
-        if (firstVisibleTab) {
-          tabButtons.forEach(b => {
-            b.classList.remove('active');
-            if (b.getAttribute('data-tab') === `tab-${firstVisibleTab}`) {
-              b.classList.add('active');
-            }
-          });
-          tabPanels.forEach(p => {
-            p.classList.remove('active');
-            if (p.id === `tab-${firstVisibleTab}`) {
-              p.classList.add('active');
-            }
-          });
-        }
-
-        // 2. ตั้งค่าแก้ไขข้อมูลและ Badges อ้างอิงตามสถานะอนุมัติ (Lock state)
+        // 1. ตั้งค่า Badges และการเปิด/ปิดดาวน์โหลด
         if (isApproved) {
           screen4ApprovedBadge.style.display = 'inline-block';
           btnApproveSpec.textContent = 'Approved ✓';
@@ -1157,125 +1290,108 @@ document.addEventListener('DOMContentLoaded', () => {
           btnExportWord.style.display = 'none';
         }
 
-        // กำหนดการอนุญาตพิมพ์แก้ไข (contenteditable)
-        const canEdit = !isApproved;
+        // 2. เรนเดอร์ Tab Buttons และ Tab Content Panels แบบ Dynamic ตาม Schema
+        const tabsBar = document.getElementById('tabs-bar-s4');
+        const contentsContainer = document.getElementById('tab-contents-container');
+        
+        if (!tabsBar || !contentsContainer || !extractionSchema) return;
 
-        // 3. เรนเดอร์ข้อมูล Tab 1: Landing Page
-        if (reqs.landingPage) {
-          const lp = reqs.landingPage;
-          const valProductName = document.getElementById('val-productName');
-          const valTagline = document.getElementById('val-tagline');
-          
-          valProductName.textContent = lp.productName || '';
-          valProductName.setAttribute('contenteditable', String(canEdit));
-          
-          valTagline.textContent = lp.tagline || '';
-          valTagline.setAttribute('contenteditable', String(canEdit));
+        tabsBar.innerHTML = '';
+        contentsContainer.innerHTML = '';
 
-          const tbody = document.querySelector('#table-keyBenefits tbody');
-          tbody.innerHTML = (lp.keyBenefits || []).map(b => `
-            <tr>
-              <td contenteditable="${canEdit}" style="font-weight: 500; border: 1px dashed ${canEdit ? 'var(--color-secondary-indigo)' : 'var(--color-border-light)'};">${b.title || ''}</td>
-              <td contenteditable="${canEdit}" style="border: 1px dashed ${canEdit ? 'var(--color-secondary-indigo)' : 'var(--color-border-light)'};">${b.description || ''}</td>
-            </tr>
-          `).join('');
-        }
+        let firstVisibleTab = null;
 
-        // 4. เรนเดอร์ข้อมูล Tab 2: Quick Quote
-        if (reqs.quickQuote && reqs.quickQuote.validationRules) {
-          const rules = reqs.quickQuote.validationRules;
-          const tbody = document.querySelector('#table-validationRules tbody');
-          
-          tbody.innerHTML = Object.keys(rules).map(k => {
-            const r = rules[k];
-            return `
-              <tr>
-                <td style="font-weight: bold; color: var(--color-primary-navy);">${k}</td>
-                <td contenteditable="${canEdit}" style="border: 1px dashed ${canEdit ? 'var(--color-secondary-indigo)' : 'var(--color-border-light)'};">${r.min}</td>
-                <td contenteditable="${canEdit}" style="border: 1px dashed ${canEdit ? 'var(--color-secondary-indigo)' : 'var(--color-border-light)'};">${r.max}</td>
-                <td contenteditable="${canEdit}" style="border: 1px dashed ${canEdit ? 'var(--color-secondary-indigo)' : 'var(--color-border-light)'};">${r.dataType || ''}</td>
-                <td contenteditable="${canEdit}" style="border: 1px dashed ${canEdit ? 'var(--color-secondary-indigo)' : 'var(--color-border-light)'};">${r.unit || ''}</td>
-                <td contenteditable="${canEdit}" style="border: 1px dashed ${canEdit ? 'var(--color-secondary-indigo)' : 'var(--color-border-light)'};">${r.errorMessage || ''}</td>
-              </tr>
+        extractionSchema.sections.forEach(sec => {
+          // ถ้าหัวข้อนี้ได้รับการสกัดวิเคราะห์ข้อมูลแล้ว
+          if (reqs[sec.key]) {
+            if (!firstVisibleTab) firstVisibleTab = sec.key;
+            
+            // วาด Tab Button
+            const tabBtn = document.createElement('button');
+            tabBtn.className = 'tab-link';
+            tabBtn.setAttribute('data-tab', `tab-${sec.key}`);
+            tabBtn.id = `tab-btn-${sec.key}`;
+            tabBtn.innerHTML = `${sec.icon} ${sec.title}`;
+            tabsBar.appendChild(tabBtn);
+
+            // วาด Tab Panel
+            const panel = document.createElement('div');
+            panel.className = 'tab-content-panel';
+            panel.id = `tab-${sec.key}`;
+            
+            // วาดหัวข้อในแท็บ
+            panel.innerHTML = `
+              <h3 style="font-size: 1.15rem; font-weight: bold; color: var(--color-primary-navy); margin-bottom: 1rem; border-bottom: 2px solid var(--color-background-slate); padding-bottom: 0.5rem; display: flex; align-items: center; gap: 0.5rem;">
+                <span>${sec.icon}</span> ${sec.title} Spec Overview
+              </h3>
             `;
-          }).join('');
-        }
 
-        // 5. เรนเดอร์ข้อมูล Tab 3: Actuarial Calculation
-        if (reqs.productCalculation) {
-          const pc = reqs.productCalculation;
-          const formulas = pc.formulas || {};
-          
-          ['basePremium', 'discount', 'totalPremium'].forEach(fKey => {
-            const el = document.getElementById(`val-formula-${fKey}`);
-            el.textContent = formulas[fKey] || '';
-            el.setAttribute('contenteditable', String(canEdit));
-          });
+            // วาด Fields ภายในแท็บ
+            sec.fields.forEach(field => {
+              const fieldValue = reqs[sec.key][field.key];
+              
+              if (field.type === 'text') {
+                const fieldDiv = document.createElement('div');
+                fieldDiv.className = 'editable-field-group';
+                fieldDiv.style.marginBottom = '1.25rem';
+                fieldDiv.innerHTML = `
+                  <label style="font-weight: bold; font-size: 0.85rem; color: var(--color-text-muted); margin-bottom: 0.25rem; display: block;">${field.label}</label>
+                  <div class="editable-val" id="val-${sec.key}-${field.key}" contenteditable="${canEdit}" style="padding: 0.65rem 0.85rem; border: 1px dashed ${canEdit ? 'var(--color-secondary-indigo)' : 'var(--color-border-light)'}; border-radius: var(--radius-sm); font-size: 0.95rem; min-height: 38px; line-height: 1.5; outline: none; background: ${canEdit ? 'var(--color-background-light)' : 'transparent'}; box-shadow: ${canEdit ? 'inset 0 1px 2px rgba(0,0,0,0.02)' : 'none'};" data-section="${sec.key}" data-field="${field.key}">${fieldValue || ''}</div>
+                `;
+                panel.appendChild(fieldDiv);
+              } else if (field.type === 'table') {
+                const flatRows = mapDataToFlatRows(sec.key, field.key, fieldValue);
+                
+                const tableDiv = document.createElement('div');
+                tableDiv.className = 'editable-table-group';
+                tableDiv.style.marginBottom = '1.75rem';
+                tableDiv.innerHTML = `
+                  <h4 style="font-size: 0.95rem; font-weight: bold; margin-bottom: 0.5rem; color: var(--color-text-dark);">${field.label}</h4>
+                  <div style="overflow-x: auto; border: 1px solid var(--color-border-light); border-radius: var(--radius-sm);">
+                    <table class="zebra-table" style="width: 100%; font-size: 0.9rem; border-collapse: collapse;" id="table-${sec.key}-${field.key}" data-section="${sec.key}" data-field="${field.key}">
+                      <thead>
+                        <tr style="background-color: var(--color-background-slate); border-bottom: 2px solid var(--color-border-light);">
+                          ${field.columns.map(col => `<th style="padding: 0.75rem; text-align: left; font-weight: 600; font-size: 0.85rem; color: var(--color-text-dark);">${col.label}</th>`).join('')}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        ${flatRows.length === 0 ? `
+                          <tr>
+                            <td colspan="${field.columns.length}" style="text-align: center; color: var(--color-text-muted); padding: 1.5rem;">ไม่มีข้อมูลการสกัดส่วนนี้</td>
+                          </tr>
+                        ` : flatRows.map((row, rowIdx) => `
+                          <tr style="border-bottom: 1px solid var(--color-border-light);">
+                            ${field.columns.map((col, colIdx) => {
+                              const cellVal = row[col.key] !== undefined ? row[col.key] : '';
+                              const isKeyCol = colIdx === 0; // คอลัมน์แรกมักจะเป็นคีย์หลัก ห้ามแก้ไขเพื่อไม่ให้ข้อมูลพัง
+                              const cellEditable = canEdit && !isKeyCol;
+                              const cellStyle = isKeyCol ? 'font-weight: bold; color: var(--color-primary-navy); background: var(--color-background-light);' : '';
+                              return `
+                                <td contenteditable="${cellEditable}" data-col="${col.key}" style="padding: 0.75rem; border: 1px dashed ${cellEditable ? 'var(--color-secondary-indigo)' : 'transparent'}; outline: none; ${cellStyle}">
+                                  ${cellVal}
+                                </td>
+                              `;
+                            }).join('')}
+                          </tr>
+                        `).join('')}
+                      </tbody>
+                    </table>
+                  </div>
+                `;
+                panel.appendChild(tableDiv);
+              }
+            });
 
-          // ตารางเกณฑ์ส่วนลด
-          const tbodyDiscount = document.querySelector('#table-discountTiers tbody');
-          tbodyDiscount.innerHTML = (pc.discountTiers || []).map(t => `
-            <tr>
-              <td contenteditable="${canEdit}" style="border: 1px dashed ${canEdit ? 'var(--color-secondary-indigo)' : 'var(--color-border-light)'};">${t.minSA}</td>
-              <td contenteditable="${canEdit}" style="border: 1px dashed ${canEdit ? 'var(--color-secondary-indigo)' : 'var(--color-border-light)'};">${t.maxSA}</td>
-              <td contenteditable="${canEdit}" style="border: 1px dashed ${canEdit ? 'var(--color-secondary-indigo)' : 'var(--color-border-light)'};">${t.rateDiscount}</td>
-            </tr>
-          `).join('');
+            contentsContainer.appendChild(panel);
+          }
+        });
 
-          // ตารางเบี้ยประกันภัยรายปี
-          const tbodyRates = document.querySelector('#table-premiumRateMatrix tbody');
-          const matrix = pc.premiumRateMatrix || {};
-          tbodyRates.innerHTML = Object.keys(matrix).map(age => {
-            const m = matrix[age];
-            return `
-              <tr>
-                <td style="font-weight: bold; color: var(--color-primary-navy);">${age}</td>
-                <td contenteditable="${canEdit}" style="border: 1px dashed ${canEdit ? 'var(--color-secondary-indigo)' : 'var(--color-border-light)'};">${m.term_5}</td>
-                <td contenteditable="${canEdit}" style="border: 1px dashed ${canEdit ? 'var(--color-secondary-indigo)' : 'var(--color-border-light)'};">${m.term_10}</td>
-                <td contenteditable="${canEdit}" style="border: 1px dashed ${canEdit ? 'var(--color-secondary-indigo)' : 'var(--color-border-light)'};">${m.term_15}</td>
-                <td contenteditable="${canEdit}" style="border: 1px dashed ${canEdit ? 'var(--color-secondary-indigo)' : 'var(--color-border-light)'};">${m.term_99}</td>
-              </tr>
-            `;
-          }).join('');
-        }
-
-        // 6. เรนเดอร์ข้อมูล Tab 4: Sale Proposal & Compliance
-        if (reqs.saleProposal) {
-          const sp = reqs.saleProposal;
-          const proj = sp.benefitProjectionRules || {};
-          
-          // ตารางมูลค่าเวนคืน
-          const tbodyCV = document.querySelector('#table-cashValueRates tbody');
-          tbodyCV.innerHTML = (proj.cashValueRates || []).map(v => {
-            const rates = v.ratesByAge || {};
-            return `
-              <tr>
-                <td style="font-weight: bold; color: var(--color-primary-navy);">${v.policyYear}</td>
-                <td contenteditable="${canEdit}" style="border: 1px dashed ${canEdit ? 'var(--color-secondary-indigo)' : 'var(--color-border-light)'};">${rates.age_1}</td>
-                <td contenteditable="${canEdit}" style="border: 1px dashed ${canEdit ? 'var(--color-secondary-indigo)' : 'var(--color-border-light)'};">${rates.age_30}</td>
-                <td contenteditable="${canEdit}" style="border: 1px dashed ${canEdit ? 'var(--color-secondary-indigo)' : 'var(--color-border-light)'};">${rates.age_44}</td>
-                <td contenteditable="${canEdit}" style="border: 1px dashed ${canEdit ? 'var(--color-secondary-indigo)' : 'var(--color-border-light)'};">${rates.age_60}</td>
-              </tr>
-            `;
-          }).join('');
-
-          // ภาษีและ disclaimer
-          const taxLimit = document.getElementById('val-tax-limit');
-          const taxDesc = document.getElementById('val-tax-desc');
-          const compRef = document.getElementById('val-compliance-ref');
-          const compText = document.getElementById('val-compliance-text');
-
-          const tb = sp.taxBenefit || {};
-          taxLimit.textContent = tb.maxDeductionLimit || '';
-          taxLimit.setAttribute('contenteditable', String(canEdit));
-          taxDesc.textContent = tb.ruleDescription || '';
-          taxDesc.setAttribute('contenteditable', String(canEdit));
-
-          const cd = sp.complianceDisclaimer || {};
-          compRef.textContent = cd.sectionReference || '';
-          compRef.setAttribute('contenteditable', String(canEdit));
-          compText.textContent = cd.disclaimerText || '';
-          compText.setAttribute('contenteditable', String(canEdit));
+        // เปิดเฉพาะแท็บแรกที่มีข้อมูลจริง
+        if (firstVisibleTab) {
+          const firstTabBtn = document.getElementById(`tab-btn-${firstVisibleTab}`);
+          const firstPanel = document.getElementById(`tab-${firstVisibleTab}`);
+          if (firstTabBtn) firstTabBtn.classList.add('active');
+          if (firstPanel) firstPanel.classList.add('active');
         }
 
       } else {
@@ -1307,113 +1423,47 @@ document.addEventListener('DOMContentLoaded', () => {
     const reqs = {};
     const origReqs = currentProjectData.extractedRequirements || {};
 
-    // 1. Landing Page
-    if (origReqs.landingPage) {
-      const keyBenefits = [];
-      document.querySelectorAll('#table-keyBenefits tbody tr').forEach(tr => {
-        const tds = tr.querySelectorAll('td');
-        if (tds.length >= 2) {
-          keyBenefits.push({
-            title: tds[0].textContent.trim(),
-            description: tds[1].textContent.trim()
-          });
-        }
-      });
-      reqs.landingPage = {
-        productName: document.getElementById('val-productName').textContent.trim(),
-        tagline: document.getElementById('val-tagline').textContent.trim(),
-        keyBenefits
-      };
-    }
+    if (!extractionSchema) return origReqs;
 
-    // 2. Quick Quote
-    if (origReqs.quickQuote) {
-      const validationRules = {};
-      document.querySelectorAll('#table-validationRules tbody tr').forEach(tr => {
-        const tds = tr.querySelectorAll('td');
-        if (tds.length >= 6) {
-          const varName = tds[0].textContent.trim();
-          validationRules[varName] = {
-            min: parseInt(tds[1].textContent.trim(), 10) || 0,
-            max: parseInt(tds[2].textContent.trim(), 10) || 0,
-            dataType: tds[3].textContent.trim(),
-            unit: tds[4].textContent.trim(),
-            errorMessage: tds[5].textContent.trim()
-          };
-        }
-      });
-      reqs.quickQuote = { validationRules };
-    }
-
-    // 3. Product Calculation
-    if (origReqs.productCalculation) {
-      const discountTiers = [];
-      document.querySelectorAll('#table-discountTiers tbody tr').forEach(tr => {
-        const tds = tr.querySelectorAll('td');
-        if (tds.length >= 3) {
-          discountTiers.push({
-            minSA: parseFloat(tds[0].textContent.trim()) || 0,
-            maxSA: parseFloat(tds[1].textContent.trim()) || 0,
-            rateDiscount: parseFloat(tds[2].textContent.trim()) || 0
-          });
-        }
-      });
-
-      const premiumRateMatrix = {};
-      document.querySelectorAll('#table-premiumRateMatrix tbody tr').forEach(tr => {
-        const tds = tr.querySelectorAll('td');
-        if (tds.length >= 5) {
-          const age = tds[0].textContent.trim();
-          premiumRateMatrix[age] = {
-            term_5: parseFloat(tds[1].textContent.trim()) || 0,
-            term_10: parseFloat(tds[2].textContent.trim()) || 0,
-            term_15: parseFloat(tds[3].textContent.trim()) || 0,
-            term_99: parseFloat(tds[4].textContent.trim()) || 0
-          };
-        }
-      });
-
-      reqs.productCalculation = {
-        formulas: {
-          basePremium: document.getElementById('val-formula-basePremium').textContent.trim(),
-          discount: document.getElementById('val-formula-discount').textContent.trim(),
-          totalPremium: document.getElementById('val-formula-totalPremium').textContent.trim()
-        },
-        discountTiers,
-        premiumRateMatrix
-      };
-    }
-
-    // 4. Sale Proposal
-    if (origReqs.saleProposal) {
-      const cashValueRates = [];
-      document.querySelectorAll('#table-cashValueRates tbody tr').forEach(tr => {
-        const tds = tr.querySelectorAll('td');
-        if (tds.length >= 5) {
-          cashValueRates.push({
-            policyYear: parseInt(tds[0].textContent.trim(), 10) || 0,
-            ratesByAge: {
-              age_1: parseFloat(tds[1].textContent.trim()) || 0,
-              age_30: parseFloat(tds[2].textContent.trim()) || 0,
-              age_44: parseFloat(tds[3].textContent.trim()) || 0,
-              age_60: parseFloat(tds[4].textContent.trim()) || 0
+    extractionSchema.sections.forEach(sec => {
+      // ดำเนินการเฉพาะหัวข้อที่มีข้อมูลอยู่เดิม
+      if (origReqs[sec.key]) {
+        reqs[sec.key] = {};
+        
+        sec.fields.forEach(field => {
+          if (field.type === 'text') {
+            const el = document.getElementById(`val-${sec.key}-${field.key}`);
+            const textVal = el ? el.textContent.trim() : '';
+            // ใช้ค่าดั้งเดิมพิจารณาประเภทข้อมูล ถ้าค่าเดิมเป็นตัวเลข ให้พาร์สเป็นตัวเลข
+            const originalVal = origReqs[sec.key][field.key];
+            reqs[sec.key][field.key] = (typeof originalVal === 'number') 
+              ? (isNaN(parseFloat(textVal)) ? 0 : parseFloat(textVal))
+              : textVal;
+          } else if (field.type === 'table') {
+            const table = document.getElementById(`table-${sec.key}-${field.key}`);
+            const flatRows = [];
+            
+            if (table) {
+              const rows = table.querySelectorAll('tbody tr');
+              rows.forEach(tr => {
+                const tds = tr.querySelectorAll('td');
+                if (tds.length === field.columns.length) {
+                  const rowObj = {};
+                  field.columns.forEach((col, colIdx) => {
+                    rowObj[col.key] = tds[colIdx].textContent.trim();
+                  });
+                  flatRows.push(rowObj);
+                }
+              });
             }
-          });
-        }
-      });
-
-      reqs.saleProposal = {
-        benefitProjectionRules: { cashValueRates },
-        taxBenefit: {
-          maxDeductionLimit: parseFloat(document.getElementById('val-tax-limit').textContent.trim()) || 0,
-          ruleDescription: document.getElementById('val-tax-desc').textContent.trim()
-        },
-        complianceDisclaimer: {
-          sectionReference: document.getElementById('val-compliance-ref').textContent.trim(),
-          disclaimerText: document.getElementById('val-compliance-text').textContent.trim()
-        }
-      };
-    }
+            
+            // นำ flat rows แปลงกลับสู่โครงสร้างดั้งเดิม (nested หรือ object of objects)
+            const originalValue = origReqs[sec.key][field.key];
+            reqs[sec.key][field.key] = mapFlatRowsToData(sec.key, field.key, flatRows, originalValue);
+          }
+        });
+      }
+    });
 
     return reqs;
   };
@@ -1486,82 +1536,38 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const reqs = project.extractedRequirements || {};
 
-        // 1. Landing Page
-        if (reqs.landingPage) {
-          md += `## 1. Marketing & Identity (ข้อมูลประชาสัมพันธ์และจุดเด่นหลัก)\n\n`;
-          md += `* **ชื่อทางการค้า (Product Name):** ${reqs.landingPage.productName || '-'}\n`;
-          md += `* **คำสโลแกน (Tagline):** ${reqs.landingPage.tagline || '-'}\n\n`;
-          md += `### ผลประโยชน์และจุดขายสำคัญ (Key Benefits):\n\n`;
-          (reqs.landingPage.keyBenefits || []).forEach(b => {
-            md += `* **หัวข้อเด่น: "${b.title}"**\n  *รายละเอียด:* ${b.description}\n`;
+        if (extractionSchema) {
+          extractionSchema.sections.forEach((sec, idx) => {
+            if (reqs[sec.key]) {
+              md += `## ${idx + 1}. ${sec.title} (${sec.desc})\n\n`;
+              
+              sec.fields.forEach(field => {
+                const val = reqs[sec.key][field.key];
+                
+                if (field.type === 'text') {
+                  md += `* **${field.label}:** ${val !== undefined && val !== '' ? val : '-'}\n`;
+                } else if (field.type === 'table') {
+                  md += `### ${field.label}:\n\n`;
+                  
+                  const flatRows = mapDataToFlatRows(sec.key, field.key, val);
+                  if (flatRows.length === 0) {
+                    md += `*ไม่มีข้อมูล*\n\n`;
+                  } else {
+                    md += `| ` + field.columns.map(c => c.label).join(' | ') + ` |\n`;
+                    md += `| ` + field.columns.map(() => ':---').join(' | ') + ` |\n`;
+                    flatRows.forEach(row => {
+                      md += `| ` + field.columns.map(c => {
+                        const cellVal = row[c.key] !== undefined ? row[c.key] : '';
+                        return String(cellVal).replace(/\|/g, '\\|'); // หลบอักขระ table pipe
+                      }).join(' | ') + ` |\n`;
+                    });
+                    md += `\n`;
+                  }
+                }
+              });
+              md += `\n---\n\n`;
+            }
           });
-          md += `\n---\n\n`;
-        }
-
-        // 2. Quick Quote
-        if (reqs.quickQuote && reqs.quickQuote.validationRules) {
-          md += `## 2. Quick Quote Form Input Validation Rules (กฎการตรวจสอบข้อมูลรับเข้า)\n\n`;
-          md += `| รหัสนำเข้า (Variable) | ต่ำสุด (Min) | สูงสุด (Max) | ประเภทข้อมูล (Data Type) | หน่วยวัด (Unit) | ข้อความแจ้งเตือนเมื่อหลุดเกณฑ์ (Error Message) |\n`;
-          md += `| :--- | :---: | :---: | :---: | :---: | :--- |\n`;
-          Object.keys(reqs.quickQuote.validationRules).forEach(k => {
-            const r = reqs.quickQuote.validationRules[k];
-            md += `| **${k}** | ${r.min} | ${r.max} | ${r.dataType} | ${r.unit} | ${r.errorMessage} |\n`;
-          });
-          md += `\n---\n\n`;
-        }
-
-        // 3. Calculation Formulas
-        if (reqs.productCalculation) {
-          const pc = reqs.productCalculation;
-          const formulas = pc.formulas || {};
-          md += `## 3. Product Calculation Engine & Math Formulas (กลไกคำนวณเบี้ยประกันภัย)\n\n`;
-          md += `### สูตรความสัมพันธ์เชิงคณิตศาสตร์อ้างอิง:\n`;
-          md += `* **เบี้ยประกันภัยฐาน (basePremium):** \`${formulas.basePremium || '-'}\`\n`;
-          md += `* **ส่วนลดเบี้ยประกันภัยหลัก (discount):** \`${formulas.discount || '-'}\`\n`;
-          md += `* **เบี้ยประกันภัยสุทธิต่อปี (totalPremium):** \`${formulas.totalPremium || '-'}\`\n\n`;
-
-          md += `### ตารางอัตราส่วนลดทุนประกันหลัก (Discount Tiers):\n\n`;
-          md += `| ทุนประกันประกันภัยขั้นต่ำ (Min SA) | ทุนประกันประกันภัยสูงสุด (Max SA) | ส่วนลดเบี้ยประกันภัยต่อทุน 1,000 บาท |\n`;
-          md += `| :--- | :--- | :---: |\n`;
-          (pc.discountTiers || []).forEach(t => {
-            md += `| ${t.minSA.toLocaleString()} บาท | ${t.maxSA.toLocaleString()} บาท | ${t.rateDiscount} บาท |\n`;
-          });
-          md += `\n`;
-
-          md += `### ตารางสัมประสิทธิ์อัตราเบี้ยประกันรายปีต่อทุน 1,000 บาท (Premium Rate Matrix - เพศชาย):\n\n`;
-          md += `| กลุ่มอายุ (Age) | แผนชำระเบี้ย 5 ปี | แผนชำระเบี้ย 10 ปี | แผนชำระเบี้ย 15 ปี | แผนชำระเบี้ย 99 ปี |\n`;
-          md += `| :--- | :---: | :---: | :---: | :---: |\n`;
-          Object.keys(pc.premiumRateMatrix || {}).forEach(age => {
-            const m = pc.premiumRateMatrix[age];
-            md += `| **อายุ ${age} ปี** | ${m.term_5} บาท | ${m.term_10} บาท | ${m.term_15} บาท | ${m.term_99} บาท |\n`;
-          });
-          md += `\n---\n\n`;
-        }
-
-        // 4. Sale Proposal
-        if (reqs.saleProposal) {
-          const sp = reqs.saleProposal;
-          const proj = sp.benefitProjectionRules || {};
-          md += `## 4. Benefit Surrender Projection & Legal Disclaimers (มูลค่าเวนคืนและข้อกฎหมาย)\n\n`;
-          
-          md += `### ตารางอัตรามูลค่าเวนคืนกรมธรรม์ต่อทุน 1,000 บาท (แผนชำระเบี้ย 10 ปี):\n\n`;
-          md += `| ถือครองกรมธรรม์ (Policy Year) | สิ้นปีที่อายุ 1 ปี | สิ้นปีที่อายุ 30 ปี | สิ้นปีที่อายุ 44 ปี | สิ้นปีที่อายุ 60 ปี |\n`;
-          md += `| :---: | :---: | :---: | :---: | :---: |\n`;
-          (proj.cashValueRates || []).forEach(v => {
-            const r = v.ratesByAge || {};
-            md += `| **ปีที่ ${v.policyYear}** | ${r.age_1} บาท | ${r.age_30} บาท | ${r.age_44} บาท | ${r.age_60} บาท |\n`;
-          });
-          md += `\n`;
-
-          const tb = sp.taxBenefit || {};
-          md += `### ข้อกำหนดสิทธิ์ประโยชน์ลดหย่อนภาษี (Tax Benefit Rules):\n`;
-          md += `* **ขีดจำกัดสิทธิ์ลดหย่อนสูงสุด:** ${tb.maxDeductionLimit ? tb.maxDeductionLimit.toLocaleString() : '-'} บาท\n`;
-          md += `* **สูตรตรรกะที่ใช้ประยุกต์:** \`${tb.ruleDescription || '-'}\`\n\n`;
-
-          const cd = sp.complianceDisclaimer || {};
-          md += `### คำแนะนำเตือนความสอดคล้อง (Compliance & Legal Disclaimers):\n`;
-          md += `* **อ้างอิงพระราชบัญญัติและประมวลกฎหมาย:** *${cd.sectionReference || '-'}*\n`;
-          md += `* **ข้อความคำเตือนคำแปลอย่างเป็นทางการ (ภาษาไทย):**\n  > ${cd.disclaimerText || '-'}\n`;
         }
 
         return md;
@@ -1597,9 +1603,10 @@ document.addEventListener('DOMContentLoaded', () => {
   // -------------------------------------------------------------
   // Application Startup Logic
   // -------------------------------------------------------------
-  if (currentProjectId) {
-    // โหลดรายละเอียดโปรเจกต์เดิม เพื่อพิจารณาว่าควรไป Screen 2, 3 หรือ 4
-    const checkStartupProject = async () => {
+  // App initialization function
+  const initApp = async () => {
+    await loadExtractionSchema();
+    if (currentProjectId) {
       try {
         const response = await fetch(`/api/projects/${currentProjectId}`);
         const data = await response.json();
@@ -1620,12 +1627,11 @@ document.addEventListener('DOMContentLoaded', () => {
           showScreen(1);
         }
       } catch (err) {
-        // Fallback
         showScreen(2);
       }
-    };
-    checkStartupProject();
-  } else {
-    showScreen(1);
-  }
+    } else {
+      showScreen(1);
+    }
+  };
+  initApp();
 });

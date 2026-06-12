@@ -34,6 +34,9 @@ app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, '../public')));
 
 // API Routes
+app.get('/api/config/schema', (req, res) => {
+  res.sendFile(path.join(__dirname, '../data/extraction-schema.json'));
+});
 app.post('/api/projects', createProjectController);
 app.get('/api/projects', getProjectsController);
 app.get('/api/projects/:projectId', getProjectByIdController);

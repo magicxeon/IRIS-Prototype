@@ -115,104 +115,35 @@ async function testGeminiConnectionController(req, res) {
 }
 
 /**
- * API Controller สำหรับสกัดวิเคราะห์ข้อมูลประกันภัยรายหัวข้อย่อย
+ * API Controller สำหรับสกัดวิเคราะห์ข้อมูลประกันภัยรายหัวข้อย่อยแบบ Dynamic ผ่าน Schema
  */
 async function analyzeSectionController(req, res) {
   const { projectId, sectionType } = req.params;
   console.log(`\n--- [Analyze API] เริ่มประมวลผลหัวข้อ: "${sectionType}" ของโปรเจกต์: "${projectId}" ---`);
 
-  // 1. ตรรกะตรวจเช็คความถูกต้องของหัวข้อสกัดวิเคราะห์
-  const promptsMap = {
-    landingPage: {
-      system: "คุณคือ Senior Insurance Business Analyst ที่มีความเชี่ยวชาญในการวิเคราะห์สเปกผลิตภัณฑ์ประกันชีวิต หน้าที่ของคุณคือการสกัดข้อมูล Marketing & Product Identity ของประกันชีวิตนี้ให้ตรงตามรายละเอียดข้อกำหนด",
-      user: `ค้นหาข้อมูลในเอกสาร Product Specification เพื่อตอบสนองความต้องการต่อไปนี้:
-1. "productName": ชื่อผลิตภัณฑ์ทางการค้าหลักของประกันชีวิตนี้
-2. "tagline": คำสโลแกนประชาสัมพันธ์การขายสั้นๆ
-3. "keyBenefits": สรุปจุดเด่นที่เป็นประโยชน์สำคัญของประกันชีวิตนี้มาอย่างน้อย 3 ข้อหลัก ระบุหัวข้อเด่น (title) และคำอธิบายสั้นๆ (description) 
-
-โครสร้างผลลัพธ์ JSON ที่กำหนด:
-{
-  "productName": "string",
-  "tagline": "string",
-  "keyBenefits": [
-    { "title": "string", "description": "string" }
-  ]
-}
-
-กรุณาตอบกลับเฉพาะข้อมูล JSON เท่านั้น ห้ามใส่คำอธิบายเพิ่มเติมใดๆ นอกเหนือจาก JSON`
-    },
-    quickQuote: {
-      system: "คุณคือ Senior Insurance Business Analyst ที่เชี่ยวชาญในการแปลงข้อกำหนดธุรกิจ (Business Rules) เป็นกฎตรวจสอบข้อมูลระบบ (Input Validation Rules) สำหรับประกันภัย",
-      user: `วิเคราะห์เอกสารข้อกำหนดผลิตภัณฑ์ประกันภัย เพื่อหาขอบเขตเงื่อนไขข้อจำกัดข้อมูลนำเข้าดังนี้:
-1. "age": ช่วงอายุผู้เอาประกันภัยต่ำสุดและสูงสุดที่ระบบรับประกันภัยได้ (ปี)
-2. "sumAssured": ขีดจำกัดขั้นต่ำและสูงสุดของการเสนอขายทุนประกันภัยหลัก (บาท)
-3. "paymentTerm": ขอบเขตจำนวนปีระยะเวลาการชำระเบี้ยประกันภัยที่เป็นไปได้ (ปี)
-
-โครงสร้างผลลัพธ์ JSON ที่กำหนด:
-{
-  "validationRules": {
-    "age": { "min": 0, "max": 0, "dataType": "integer", "unit": "years", "errorMessage": "string" },
-    "sumAssured": { "min": 0, "max": 0, "dataType": "integer", "unit": "THB", "errorMessage": "string" },
-    "paymentTerm": { "min": 0, "max": 0, "dataType": "integer", "unit": "years", "errorMessage": "string" }
-  }
-}
-
-กรุณาตอบกลับเฉพาะข้อมูล JSON เท่านั้น ห้ามใส่คำอธิบายเพิ่มเติมใดๆ นอกเหนือจาก JSON`
-    },
-    productCalculation: {
-      system: "คุณคือ Senior Insurance Business Analyst และผู้เชี่ยวชาญระบบคำนวณเบี้ยประกันชีวิต (Actuarial Calculation Engine Specifier)",
-      user: `วิเคราะห์เอกสาร Pricing & Valuation และ Product Specification เพื่อสกัดข้อมูลคำนวณเบี้ย:
-1. สกัดสูตรคำนวณเชิงภาษาคณิตศาสตร์:
-   - "basePremium": สูตรคำนวณเบี้ยประกันภัยฐาน
-   - "discount": สูตรคำนวณส่วนลดเบี้ยประกันภัยสะสม
-   - "totalPremium": สูตรคำนวณยอดเบี้ยประกันภัยสุทธิต่อปี
-2. "discountTiers": สกัดตารางสัดส่วนส่วนลดเบี้ยต่อทุน 1,000 บาท ตามช่วงของทุนประกันภัยหลัก
-3. "premiumRateMatrix": สกัดค่าอัตราเบี้ยประกันรายปีต่อทุน 1,000 บาท (เพศชาย) สำหรับกลุ่มอายุ 1, 35, 40, 44, 50, 75 ปี และระยะชำระเบี้ย 5, 10, 15, 99 ปี
-
-โครงสร้างผลลัพธ์ JSON ที่กำหนด:
-{
-  "formulas": { "basePremium": "string", "discount": "string", "totalPremium": "string" },
-  "discountTiers": [
-    { "minSA": 0, "maxSA": 0, "rateDiscount": 0 }
-  ],
-  "premiumRateMatrix": {
-    "age_1": { "term_5": 0, "term_10": 0, "term_15": 0, "term_99": 0 },
-    "age_35": { "term_5": 0, "term_10": 0, "term_15": 0, "term_99": 0 },
-    "age_40": { "term_5": 0, "term_10": 0, "term_15": 0, "term_99": 0 },
-    "age_44": { "term_5": 0, "term_10": 0, "term_15": 0, "term_99": 0 },
-    "age_50": { "term_5": 0, "term_10": 0, "term_15": 0, "term_99": 0 },
-    "age_75": { "term_5": 0, "term_10": 0, "term_15": 0, "term_99": 0 }
-  }
-}
-
-กรุณาตอบกลับเฉพาะข้อมูล JSON เท่านั้น ห้ามใส่คำอธิบายเพิ่มเติมใดๆ นอกเหนือจาก JSON`
-    },
-    saleProposal: {
-      system: "คุณคือ Senior Insurance Business Analyst ที่มีความรู้ความเชี่ยวชาญด้านกฎระเบียบข้อบังคับและการตลาดของสมาคมประกันชีวิต (Compliance and Insurance Sales Projection Rules)",
-      user: `ค้นหาข้อมูลจาก Pricing Spec, Product Spec และ Compliance Document เพื่อดึงเงื่อนไขเสนอขาย:
-1. "cashValueRates": สกัดตารางอัตรามูลค่าเวนคืนต่อทุน 1,000 บาท (สำหรับแผนชำระเบี้ย 10 ปี) ในปีปฏิทินที่ 1, 2, 5, 10, 11, 20, 25 สำหรับอายุ 1, 30, 44, 60 ปี
-2. "taxBenefit": ค้นหาขีดจำกัดสูงสุดการนำเบี้ยประกันภัยหลักไปหักลดหย่อนภาษีเงินได้บุคคลธรรมดา
-3. "complianceDisclaimer": สกัดข้อความคำเตือนภาษาไทยอย่างเป็นทางการ เกี่ยวกับหน้าที่ของผู้เอาประกันตามประมวลกฎหมายแพ่งและพาณิชย์ มาตรา 865
-
-โครงสร้างผลลัพธ์ JSON ที่กำหนด:
-{
-  "benefitProjectionRules": {
-    "cashValueRates": [
-      { "policyYear": 1, "ratesByAge": { "age_1": 0, "age_30": 0, "age_44": 0, "age_60": 0 } }
-    ]
-  },
-  "taxBenefit": { "maxDeductionLimit": 0, "ruleDescription": "string" },
-  "complianceDisclaimer": { "sectionReference": "string", "disclaimerText": "string" }
-}
-
-กรุณาตอบกลับเฉพาะข้อมูล JSON เท่านั้น ห้ามใส่คำอธิบายเพิ่มเติมใดๆ นอกเหนือจาก JSON`
+  // 1. โหลดโครงสร้างวิเคราะห์แบบ Dynamic จากไฟล์ extraction-schema.json
+  let section = null;
+  try {
+    const schemaPath = path.join(__dirname, '../data/extraction-schema.json');
+    if (!fs.existsSync(schemaPath)) {
+      throw new Error(`ไม่พบไฟล์ schema ที่เส้นทาง: ${schemaPath}`);
     }
-  };
+    const schema = JSON.parse(fs.readFileSync(schemaPath, 'utf8'));
+    section = schema.sections.find(s => s.key === sectionType);
+  } catch (schemaErr) {
+    console.error(`[Analyze API] ❌ ข้อผิดพลาดในการอ่าน schema:`, schemaErr.message);
+    return res.status(500).json({
+      success: false,
+      message: `ไม่สามารถโหลดการตั้งค่าการสกัดวิเคราะห์ได้: ${schemaErr.message}`
+    });
+  }
 
-  const selectedConfig = promptsMap[sectionType];
-  if (!selectedConfig) {
-    console.error(`[Analyze API] ❌ ข้อผิดพลาด: sectionType="${sectionType}" ไม่สอดคล้องกับระบบ`);
-    return res.status(400).json({ success: false, message: "ประเภทหัวข้อการสกัดวิเคราะห์ไม่ถูกต้อง" });
+  if (!section) {
+    console.error(`[Analyze API] ❌ ข้อผิดพลาด: sectionType="${sectionType}" ไม่พบนิยามใน schema`);
+    return res.status(400).json({
+      success: false,
+      message: "ประเภทหัวข้อการสกัดวิเคราะห์ไม่ถูกต้องหรือไม่มีการตั้งค่าไว้"
+    });
   }
 
   // 2. ตรวจสอบความพร้อมของคีย์ Gemini API Key
@@ -278,9 +209,15 @@ async function analyzeSectionController(req, res) {
       });
     }
 
-    // สร้าง Prompt สุดท้าย
+    // 4. สร้าง Prompt และ System Instruction จาก Schema
+    const systemInstruction = section.systemInstruction;
+    let sectionUserPrompt = section.userPrompt;
+    if (section.expectedJsonStructure) {
+      sectionUserPrompt += `\n\nโครงสร้างผลลัพธ์ JSON ที่กำหนด:\n${JSON.stringify(section.expectedJsonStructure, null, 2)}\n\nกรุณาตอบกลับเฉพาะข้อมูล JSON เท่านั้น ห้ามใส่คำอธิบายเพิ่มเติมใดๆ นอกเหนือจาก JSON`;
+    }
+
     const documentContextPrompt = docTexts.join('\n\n');
-    const userPrompt = `${documentContextPrompt}\n\n${selectedConfig.user}`;
+    const finalPrompt = `${documentContextPrompt}\n\n${sectionUserPrompt}`;
 
     console.log(`[Analyze API] กำลังส่งคำร้องขอประมวลผลไปยังโมเดล gemini-2.5-flash...`);
     const tempGenAI = new GoogleGenerativeAI(activeKey);
@@ -290,12 +227,12 @@ async function analyzeSectionController(req, res) {
         responseMimeType: "application/json",
         temperature: 0.1
       },
-      systemInstruction: selectedConfig.system
+      systemInstruction: systemInstruction
     });
 
     const result = await model.generateContent([
       ...inlineParts,
-      userPrompt
+      finalPrompt
     ]);
 
     const responseText = result.response.text();
@@ -319,7 +256,7 @@ async function analyzeSectionController(req, res) {
       });
     }
 
-    // 4. บันทึกผลลัพธ์ลงในโครงการ
+    // 5. บันทึกผลลัพธ์ลงในโครงการ
     if (!project.extractedRequirements) {
       project.extractedRequirements = {};
     }

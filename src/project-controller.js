@@ -196,10 +196,12 @@ function exportJiraCsvController(req, res) {
     // 2. เพิ่มแถวข้อมูลจาก Landing Page
     if (requirements.landingPage) {
       const lp = requirements.landingPage;
-      const summary = escapeCsv(`[IREBA - Landing Page] ${lp.productName || 'Product'} - Marketing & Identity`);
+      const productName = lp.productName || 'Product';
+      const summary = escapeCsv(`[IREBA - Landing Page] ${productName} - Marketing & Identity`);
       const desc = escapeCsv(
         `ชื่อทางการค้า: ${lp.productName || '-'}\n` +
         `คำสโลแกน: ${lp.tagline || '-'}\n` +
+        `กลุ่มเป้าหมาย: ${lp.targetAudience || '-'}\n` +
         `จุดเด่นหลัก: ${(lp.keyBenefits || []).map(b => b.title).join(', ')}`
       );
       csvContent += `${summary},${desc},Story,High\n`;
@@ -213,8 +215,9 @@ function exportJiraCsvController(req, res) {
     }
 
     // 3. เพิ่มแถวข้อมูลจาก Quick Quote Validation Rules
-    if (requirements.quickQuote && requirements.quickQuote.validationRules) {
-      const rules = requirements.quickQuote.validationRules;
+    if (requirements.quickQuote) {
+      const qq = requirements.quickQuote;
+      const rules = qq.validationRules || {};
       Object.keys(rules).forEach(field => {
         const item = rules[field];
         const summary = escapeCsv(`[IREBA - Quick Quote] Input: ${field} Validation`);
@@ -226,41 +229,92 @@ function exportJiraCsvController(req, res) {
         );
         csvContent += `${summary},${desc},Story,Medium\n`;
       });
+
+      if (qq.paymentModes || qq.paymentTerms) {
+        const summary = escapeCsv(`[IREBA - Quick Quote] Payment Options Config`);
+        const desc = escapeCsv(
+          `งวดชำระเบี้ยที่รองรับ: ${qq.paymentModes || '-'}\n` +
+          `ระยะเวลาชำระเบี้ย: ${qq.paymentTerms || '-'}`
+        );
+        csvContent += `${summary},${desc},Story,Medium\n`;
+      }
     }
 
     // 4. เพิ่มแถวข้อมูลจาก Product Calculation Formulas
-    if (requirements.productCalculation && requirements.productCalculation.formulas) {
-      const formulas = requirements.productCalculation.formulas;
-      Object.keys(formulas).forEach(calcName => {
-        const formulaStr = formulas[calcName];
-        const summary = escapeCsv(`[IREBA - Calculation] ${calcName} Formula Implementation`);
+    if (requirements.productCalculation) {
+      const pc = requirements.productCalculation;
+      // รองรับทั้งแบบ flat (schema v2) และ nested (v1)
+      const baseFormula = pc.formulaBasePremium || pc.formulas?.basePremium || '-';
+      const discountFormula = pc.formulaDiscount || pc.formulas?.discount || '-';
+      const totalFormula = pc.formulaTotalPremium || pc.formulas?.totalPremium || '-';
+
+      const summary = escapeCsv(`[IREBA - Calculation] Formula Engine Implementation`);
+      const desc = escapeCsv(
+        `สูตรประมวลผลเบี้ยประกันฐาน (basePremium): ${baseFormula}\n` +
+        `สูตรประมวลผลส่วนลดเบี้ยประกันภัย (discount): ${discountFormula}\n` +
+        `สูตรประมวลผลเบี้ยสุทธิต่อปี (totalPremium): ${totalFormula}\n` +
+        `กรุณาเขียนโปรแกรมคำนวณเบี้ยประกันหลังบ้านตามหลักคณิตศาสตร์ประกันภัยสูตรนี้`
+      );
+      csvContent += `${summary},${desc},Task,High\n`;
+    }
+
+    // 5. เพิ่มแถวสัญญาเพิ่มเติมที่รองรับ (Supported Riders)
+    if (requirements.supportedRiders && requirements.supportedRiders.ridersList) {
+      requirements.supportedRiders.ridersList.forEach(rider => {
+        const summary = escapeCsv(`[IREBA - Supported Riders] Rider: ${rider.riderName}`);
         const desc = escapeCsv(
-          `สูตรประมวลผล: ${formulaStr}\n` +
-          `กรุณาเขียนโปรแกรมคำนวณเบี้ยประกันหลังบ้านตามหลักคณิตศาสตร์ประกันภัยสูตรนี้`
+          `ชื่อสัญญาเพิ่มเติม: ${rider.riderName}\n` +
+          `ประเภท: ${rider.riderType || 'N/A'}\n` +
+          `อายุรับประกัน: ${rider.entryAgeMin || 0} - ${rider.entryAgeMax || 0} ปี\n` +
+          `อายุคุ้มครองสูงสุด: ถึงอายุ ${rider.renewalAgeLimit || 0} ปี\n` +
+          `หมายเหตุการต่ออายุ: ${rider.renewalNote || 'N/A'}`
         );
-        csvContent += `${summary},${desc},Task,High\n`;
+        csvContent += `${summary},${desc},Story,Medium\n`;
       });
     }
 
-    // 5. เพิ่มแถวข้อมูลจาก Sale Proposal & Compliance
+    // 6. เพิ่มแถวข้อมูลจาก Sale Proposal & Compliance
     if (requirements.saleProposal) {
       const sp = requirements.saleProposal;
-      const tb = sp.taxBenefit || {};
-      const cd = sp.complianceDisclaimer || {};
+      // รองรับทั้งแบบ flat (schema v2) และ nested (v1)
+      const maxDeductionLimit = sp.taxDeductionLimit || sp.taxBenefit?.maxDeductionLimit || '-';
+      const taxRuleDescription = sp.taxRuleDescription || sp.taxBenefit?.ruleDescription || '-';
+      const sectionReference = sp.complianceSectionRef || sp.complianceDisclaimer?.sectionReference || '-';
+      const disclaimerText = sp.complianceDisclaimerText || sp.complianceDisclaimer?.disclaimerText || '-';
 
       const taxSummary = escapeCsv(`[IREBA - Sale Proposal] Tax Benefit Deduction Logic`);
       const taxDesc = escapeCsv(
-        `ขีดจำกัดสิทธิ์ลดหย่อนสูงสุด: ${tb.maxDeductionLimit || '-'} บาท\n` +
-        `สูตรตรรกะ: ${tb.ruleDescription || '-'}`
+        `ขีดจำกัดสิทธิ์ลดหย่อนสูงสุด: ${maxDeductionLimit} บาท\n` +
+        `สูตรตรรกะ: ${taxRuleDescription}`
       );
       csvContent += `${taxSummary},${taxDesc},Story,Medium\n`;
 
-      const compSummary = escapeCsv(`[IREBA - Compliance] Legal Disclaimer (${cd.sectionReference || 'ม.865'})`);
-      const compDesc = escapeCsv(`อ้างอิง: ${cd.sectionReference || '-'}\nข้อความคำเตือน: ${cd.disclaimerText || '-'}`);
+      const compSummary = escapeCsv(`[IREBA - Compliance] Legal Disclaimer (${sectionReference})`);
+      const compDesc = escapeCsv(`อ้างอิง: ${sectionReference}\nข้อความคำเตือน: ${disclaimerText}`);
       csvContent += `${compSummary},${compDesc},Task,Low\n`;
+
+      // ฟิลด์กฎหมายความคุ้มครองเพิ่มเติม
+      if (sp.freeLookPeriodDays || sp.incontestabilityPeriodYears || sp.suicideExclusionYears) {
+        const summary = escapeCsv(`[IREBA - Compliance] Policy Terms & Clauses`);
+        const desc = escapeCsv(
+          `ระยะเวลาขอยกเลิก Free-look: ${sp.freeLookPeriodDays || '-'} วัน\n` +
+          `ระยะเวลาไม่โต้แย้งความไม่สมบูรณ์: ${sp.incontestabilityPeriodYears || '-'} ปี\n` +
+          `ข้อยกเว้นกรณีการฆ่าตัวตาย: ${sp.suicideExclusionYears || '-'} ปี`
+        );
+        csvContent += `${summary},${desc},Story,Medium\n`;
+      }
+
+      if (sp.premiumHolidayRules || sp.partialSurrenderRules) {
+        const summary = escapeCsv(`[IREBA - Compliance] Policy Flexibility`);
+        const desc = escapeCsv(
+          `สิทธิ์หยุดพักชำระเบี้ย (Premium Holiday): ${sp.premiumHolidayRules || '-'}\n` +
+          `สิทธิ์ถอนเงินสดบางส่วน (Partial Surrender): ${sp.partialSurrenderRules || '-'}`
+        );
+        csvContent += `${summary},${desc},Story,Medium\n`;
+      }
     }
 
-    // 6. ตั้งค่าหัวเรื่องสำหรับบังคับดาวน์โหลดไฟล์
+    // 7. ตั้งค่าหัวเรื่องสำหรับบังคับดาวน์โหลดไฟล์
     res.setHeader('Content-Type', 'text/csv; charset=utf-8');
     res.setHeader('Content-Disposition', `attachment; filename=JIRA_Import_${projectId}.csv`);
 
@@ -344,6 +398,7 @@ function exportWordDocController(req, res) {
       html += `<table class="meta-table">`;
       html += `<tr><td class="label">ชื่อทางการค้า (Product Name):</td><td><strong>${lp.productName || '-'}</strong></td></tr>`;
       html += `<tr><td class="label">คำสโลแกน (Tagline):</td><td><em>${lp.tagline || '-'}</em></td></tr>`;
+      html += `<tr><td class="label">กลุ่มเป้าหมาย (Target Audience):</td><td>${lp.targetAudience || '-'}</td></tr>`;
       html += `</table>`;
       html += `<h3>ผลประโยชน์และจุดขายสำคัญ (Key Benefits)</h3>`;
       html += `<table><thead><tr><th>หัวข้อ (Title)</th><th>รายละเอียด (Description)</th></tr></thead><tbody>`;
@@ -354,37 +409,48 @@ function exportWordDocController(req, res) {
     }
 
     // Section 2: Quick Quote
-    if (reqs.quickQuote && reqs.quickQuote.validationRules) {
+    if (reqs.quickQuote) {
+      const qq = reqs.quickQuote;
+      const rules = qq.validationRules || {};
       html += `<h2>2. กฎการตรวจสอบข้อมูลรับเข้า Quick Quote (Validation Rules)</h2>`;
       html += `<table><thead><tr><th>ตัวแปร</th><th>Min</th><th>Max</th><th>ประเภทข้อมูล</th><th>หน่วย</th><th>ข้อความแจ้งเตือน</th></tr></thead><tbody>`;
-      const rules = reqs.quickQuote.validationRules;
-      Object.keys(rules).forEach((k, i) => {
+      Object.keys(rules).forEach((k) => {
         const r = rules[k];
         html += `<tr><td><strong>${k}</strong></td><td>${r.min}</td><td>${r.max}</td><td>${r.dataType || ''}</td><td>${r.unit || ''}</td><td>${r.errorMessage || ''}</td></tr>`;
       });
-      html += `</tbody></table><hr>`;
+      html += `</tbody></table>`;
+      
+      html += `<table class="meta-table" style="margin-top: 10pt;">`;
+      html += `<tr><td class="label">งวดชำระเบี้ยที่รองรับ (Payment Modes):</td><td>${qq.paymentModes || '-'}</td></tr>`;
+      html += `<tr><td class="label">ระยะเวลาชำระเบี้ยประกันภัย (Payment Terms):</td><td>${qq.paymentTerms || '-'}</td></tr>`;
+      html += `</table><hr>`;
     }
 
     // Section 3: Product Calculation
     if (reqs.productCalculation) {
       const pc = reqs.productCalculation;
-      const f = pc.formulas || {};
+      const baseFormula = pc.formulaBasePremium || pc.formulas?.basePremium || '-';
+      const discountFormula = pc.formulaDiscount || pc.formulas?.discount || '-';
+      const totalFormula = pc.formulaTotalPremium || pc.formulas?.totalPremium || '-';
+
       html += `<h2>3. กลไกคำนวณเบี้ยประกันภัย (Actuarial Calculation Engine)</h2>`;
       html += `<h3>สูตรความสัมพันธ์เชิงคณิตศาสตร์อ้างอิง:</h3>`;
       html += `<table class="meta-table">`;
-      html += `<tr><td class="label">เบี้ยประกันภัยฐาน (basePremium):</td><td><code>${f.basePremium || '-'}</code></td></tr>`;
-      html += `<tr><td class="label">ส่วนลดเบี้ยประกันภัย (discount):</td><td><code>${f.discount || '-'}</code></td></tr>`;
-      html += `<tr><td class="label">เบี้ยประกันภัยสุทธิ (totalPremium):</td><td><code>${f.totalPremium || '-'}</code></td></tr>`;
+      html += `<tr><td class="label">เบี้ยประกันภัยฐาน (basePremium):</td><td><code>${baseFormula}</code></td></tr>`;
+      html += `<tr><td class="label">ส่วนลดเบี้ยประกันภัย (discount):</td><td><code>${discountFormula}</code></td></tr>`;
+      html += `<tr><td class="label">เบี้ยประกันภัยสุทธิ (totalPremium):</td><td><code>${totalFormula}</code></td></tr>`;
       html += `</table>`;
 
       html += `<h3>ตารางอัตราส่วนลดทุนประกัน (Discount Tiers):</h3>`;
       html += `<table><thead><tr><th>ทุนประกันขั้นต่ำ (Min SA)</th><th>ทุนประกันสูงสุด (Max SA)</th><th>ส่วนลดต่อทุน 1,000 บาท</th></tr></thead><tbody>`;
       (pc.discountTiers || []).forEach(t => {
-        html += `<tr><td>${Number(t.minSA).toLocaleString()}</td><td>${Number(t.maxSA).toLocaleString()}</td><td>${t.rateDiscount}</td></tr>`;
+        const minSAStr = t.minSA !== null && t.minSA !== undefined ? Number(t.minSA).toLocaleString() : '0';
+        const maxSAStr = t.maxSA !== null && t.maxSA !== undefined ? Number(t.maxSA).toLocaleString() : 'ไม่จำกัด';
+        html += `<tr><td>${minSAStr}</td><td>${maxSAStr}</td><td>${t.rateDiscount}</td></tr>`;
       });
       html += `</tbody></table>`;
 
-      html += `<h3>ตารางสัมประสิทธิ์อัตราเบี้ยประกันรายปี (Premium Rate Matrix):</h3>`;
+      html += `<h3>ตารางสัมประสิทธิ์อัตราเบี้ยประกันรายปีต่อทุน 1,000 บาท (Premium Rate Matrix):</h3>`;
       html += `<table><thead><tr><th>อายุ</th><th>แผน 5 ปี</th><th>แผน 10 ปี</th><th>แผน 15 ปี</th><th>แผน 99 ปี</th></tr></thead><tbody>`;
       Object.keys(pc.premiumRateMatrix || {}).forEach(age => {
         const m = pc.premiumRateMatrix[age];
@@ -393,17 +459,36 @@ function exportWordDocController(req, res) {
       html += `</tbody></table><hr>`;
     }
 
-    // Section 4: Sale Proposal
+    // Section 4: Supported Riders
+    if (reqs.supportedRiders && reqs.supportedRiders.ridersList) {
+      html += `<h2>4. สัญญาเพิ่มเติมประกันภัยที่รองรับ (Supported Riders)</h2>`;
+      html += `<table><thead><tr><th>ชื่อสัญญาเพิ่มเติม</th><th>ประเภท</th><th>อายุรับประกันต่ำสุด</th><th>อายุรับประกันสูงสุด</th><th>อายุคุ้มครองสูงสุด</th><th>หมายเหตุการต่ออายุ</th></tr></thead><tbody>`;
+      reqs.supportedRiders.ridersList.forEach(rider => {
+        html += `<tr>` +
+          `<td><strong>${rider.riderName || '-'}</strong></td>` +
+          `<td>${rider.riderType || '-'}</td>` +
+          `<td>${rider.entryAgeMin || 0} ปี</td>` +
+          `<td>${rider.entryAgeMax || 0} ปี</td>` +
+          `<td>ถึงอายุ ${rider.renewalAgeLimit || 0} ปี</td>` +
+          `<td>${rider.renewalNote || '-'}</td>` +
+          `</tr>`;
+      });
+      html += `</tbody></table><hr>`;
+    }
+
+    // Section 5: Sale Proposal & Compliance
     if (reqs.saleProposal) {
       const sp = reqs.saleProposal;
-      const proj = sp.benefitProjectionRules || {};
-      const tb = sp.taxBenefit || {};
-      const cd = sp.complianceDisclaimer || {};
+      const cashValueRates = sp.cashValueRates || sp.benefitProjectionRules?.cashValueRates || [];
+      const maxDeductionLimit = sp.taxDeductionLimit || sp.taxBenefit?.maxDeductionLimit || 0;
+      const taxRuleDescription = sp.taxRuleDescription || sp.taxBenefit?.ruleDescription || '-';
+      const sectionReference = sp.complianceSectionRef || sp.complianceDisclaimer?.sectionReference || '-';
+      const disclaimerText = sp.complianceDisclaimerText || sp.complianceDisclaimer?.disclaimerText || '';
 
-      html += `<h2>4. ตารางมูลค่าเวนคืนและข้อกฎหมาย (Benefit Projection &amp; Compliance)</h2>`;
+      html += `<h2>5. ตารางมูลค่าเวนคืนและข้อกฎหมาย (Benefit Projection &amp; Compliance)</h2>`;
       html += `<h3>ตารางอัตรามูลค่าเวนคืนกรมธรรม์ต่อทุน 1,000 บาท:</h3>`;
       html += `<table><thead><tr><th>ปีกรมธรรม์</th><th>อายุ 1 ปี</th><th>อายุ 30 ปี</th><th>อายุ 44 ปี</th><th>อายุ 60 ปี</th></tr></thead><tbody>`;
-      (proj.cashValueRates || []).forEach(v => {
+      cashValueRates.forEach(v => {
         const r = v.ratesByAge || {};
         html += `<tr><td><strong>ปีที่ ${v.policyYear}</strong></td><td>${r.age_1}</td><td>${r.age_30}</td><td>${r.age_44}</td><td>${r.age_60}</td></tr>`;
       });
@@ -411,15 +496,24 @@ function exportWordDocController(req, res) {
 
       html += `<h3>สิทธิ์ประโยชน์ลดหย่อนภาษี:</h3>`;
       html += `<table class="meta-table">`;
-      html += `<tr><td class="label">ขีดจำกัดสูงสุด:</td><td>${Number(tb.maxDeductionLimit || 0).toLocaleString()} บาท</td></tr>`;
-      html += `<tr><td class="label">สูตรตรรกะ:</td><td><code>${tb.ruleDescription || '-'}</code></td></tr>`;
+      html += `<tr><td class="label">วงเงินลดหย่อนภาษีสูงสุด:</td><td>${Number(maxDeductionLimit).toLocaleString()} บาท</td></tr>`;
+      html += `<tr><td class="label">เกณฑ์หักลดหย่อนภาษี:</td><td>${taxRuleDescription}</td></tr>`;
+      html += `</table>`;
+
+      html += `<h3>เงื่อนไขระยะเวลาประกันภัยและความยืดหยุ่น:</h3>`;
+      html += `<table class="meta-table">`;
+      html += `<tr><td class="label">ระยะเวลา Free-look (วัน):</td><td>${sp.freeLookPeriodDays || '-'} วัน</td></tr>`;
+      html += `<tr><td class="label">ระยะเวลาไม่โต้แย้งความไม่สมบูรณ์ (ปี):</td><td>${sp.incontestabilityPeriodYears || '-'} ปี</td></tr>`;
+      html += `<tr><td class="label">ข้อยกเว้นกรณีฆ่าตัวตาย (ปี):</td><td>${sp.suicideExclusionYears || '-'} ปี</td></tr>`;
+      html += `<tr><td class="label">เกณฑ์ Premium Holiday:</td><td>${sp.premiumHolidayRules || '-'}</td></tr>`;
+      html += `<tr><td class="label">เกณฑ์ Partial Surrender:</td><td>${sp.partialSurrenderRules || '-'}</td></tr>`;
       html += `</table>`;
 
       html += `<h3>ข้อกำหนดทางกฎหมายและคำเตือน:</h3>`;
       html += `<table class="meta-table">`;
-      html += `<tr><td class="label">อ้างอิงกฎหมาย:</td><td><em>${cd.sectionReference || '-'}</em></td></tr>`;
+      html += `<tr><td class="label">อ้างอิงกฎหมาย:</td><td><em>${sectionReference}</em></td></tr>`;
       html += `</table>`;
-      html += `<blockquote>${cd.disclaimerText || ''}</blockquote>`;
+      html += `<blockquote>${disclaimerText}</blockquote>`;
     }
 
     html += `

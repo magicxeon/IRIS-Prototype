@@ -28,7 +28,7 @@
     "extractedRequirements": {
       "landingPage": {
         "productName": "FutureShield 99",
-        "tagline": "จ่ายสั้น จบไว",
+        "tagline": "จ่ายสั้น คุ้มครองยาว สภาพคล่องสูง เพื่ออิสระทางการเงินที่ยืดหยุ่น",
         "keyBenefits": [
           {
             "title": "จ่ายสั้น จบไว",
@@ -42,7 +42,8 @@
             "title": "สภาพคล่องสูง",
             "description": "จัดการวิกฤตได้ด้วย Premium Holiday และ Partial Surrender"
           }
-        ]
+        ],
+        "targetAudience": "หัวหน้าครอบครัวยุคดิจิทัล, ผู้บริหารระดับกลาง, หรือหัวหน้าสายงานด้านเทคโนโลยี (อายุ 35-50 ปี) ที่มีรายได้มั่นคง ต้องการสร้างมรดกหรือทุนการศึกษาให้บุตร และต้องการนำสิทธิประโยชน์ไปลดหย่อนภาษีสูงสุด"
       },
       "quickQuote": {
         "validationRules": {
@@ -55,32 +56,27 @@
           },
           "sumAssured": {
             "min": 100000,
-            "max": 999999999,
+            "max": 0,
             "dataType": "integer",
             "unit": "THB",
-            "errorMessage": "จำนวนเงินเอาประกันภัยต้องไม่น้อยกว่า 100,000 บาท"
+            "errorMessage": "จำนวนเงินเอาประกันภัยต้องไม่ต่ำกว่า 100,000 บาท"
           },
           "paymentTerm": {
             "min": 5,
-            "max": 98,
+            "max": 15,
             "dataType": "integer",
             "unit": "years",
             "errorMessage": "ระยะเวลาชำระเบี้ยต้องเป็น 5, 10, 15 ปี หรือชำระถึงอายุ 99 ปี"
           }
-        }
+        },
+        "paymentModes": "รายปี",
+        "paymentTerms": "5 ปี, 10 ปี, 15 ปี, ชำระถึงอายุ 99 ปี"
       },
       "productCalculation": {
-        "formulas": {
-          "basePremium": "PremiumRatePer1000SA * (SA / 1000)",
-          "discount": "DiscountRatePer1000SA * (SA / 1000)",
-          "totalPremium": "(PremiumRatePer1000SA * (SA / 1000)) - (DiscountRatePer1000SA * (SA / 1000))"
-        },
+        "formulaBasePremium": "GP = (P_x:n| + E_fixed) / (1 - E_var - Margin)",
+        "formulaDiscount": "Discount = (SA / 1000) * rateDiscount_tier",
+        "formulaTotalPremium": "Total Premium = (GP * (SA / 1000)) - Discount",
         "discountTiers": [
-          {
-            "minSA": 0,
-            "maxSA": 499999,
-            "rateDiscount": 0
-          },
           {
             "minSA": 500000,
             "maxSA": 999999,
@@ -88,12 +84,12 @@
           },
           {
             "minSA": 1000000,
-            "maxSA": 2999999,
+            "maxSA": 2990000,
             "rateDiscount": 3
           },
           {
             "minSA": 3000000,
-            "maxSA": null,
+            "maxSA": 999999999,
             "rateDiscount": 4
           }
         ],
@@ -137,81 +133,233 @@
         }
       },
       "saleProposal": {
-        "benefitProjectionRules": {
-          "cashValueRates": [
-            {
-              "policyYear": 1,
-              "ratesByAge": {
-                "age_1": 0,
-                "age_30": 0,
-                "age_44": 0,
-                "age_60": 0
-              }
-            },
-            {
-              "policyYear": 2,
-              "ratesByAge": {
-                "age_1": 12,
-                "age_30": 25,
-                "age_44": 45,
-                "age_60": 70
-              }
-            },
-            {
-              "policyYear": 5,
-              "ratesByAge": {
-                "age_1": 110,
-                "age_30": 185,
-                "age_44": 285,
-                "age_60": 350
-              }
-            },
-            {
-              "policyYear": 10,
-              "ratesByAge": {
-                "age_1": 385,
-                "age_30": 605,
-                "age_44": 840,
-                "age_60": 1000
-              }
-            },
-            {
-              "policyYear": 11,
-              "ratesByAge": {
-                "age_1": 400,
-                "age_30": 625,
-                "age_44": 872,
-                "age_60": 1000
-              }
-            },
-            {
-              "policyYear": 20,
-              "ratesByAge": {
-                "age_1": 535,
-                "age_30": 800,
-                "age_44": 985,
-                "age_60": 1000
-              }
-            },
-            {
-              "policyYear": 25,
-              "ratesByAge": {
-                "age_1": 615,
-                "age_30": 865,
-                "age_44": 1000,
-                "age_60": 1000
-              }
+        "cashValueRates": [
+          {
+            "policyYear": 1,
+            "ratesByAge": {
+              "age_1": 0,
+              "age_30": 0,
+              "age_44": 0,
+              "age_60": 0
             }
-          ]
-        },
-        "taxBenefit": {
-          "maxDeductionLimit": 100000,
-          "ruleDescription": "เบี้ยประกันจำนวน 100,000 บาทแรกสามารถนำไปใช้สิทธิหักลดหย่อนภาษีได้เต็มจำนวน ช่วยให้บริหารจัดการภาษีบุคคลธรรมดาได้อย่างมีประสิทธิภาพสูงสุด"
-        },
-        "complianceDisclaimer": {
-          "sectionReference": "ประมวลกฎหมายแพ่งและพาณิชย์ มาตรา 865",
-          "disclaimerText": "ผู้ขอเอาประกันภัยมีหน้าที่แถลงข้อความจริงเกี่ยวกับสุขภาพ ประวัติการรักษาพยาบาล และอาชีพ ตามหลักความซื่อสัตย์อย่างยิ่ง (Utmost Good Faith) หากมีการปกปิดข้อความจริง หรือแถลงข้อความอันเป็นเท็จ บริษัทมีสิทธิบอกล้างสัญญาประกันภัยภายในระยะเวลา 2 ปีนับตั้งแต่วันเริ่มมีผลคุ้มครองตามประมวลกฎหมายแพ่งและพาณิชย์ มาตรา 865"
-        }
+          },
+          {
+            "policyYear": 2,
+            "ratesByAge": {
+              "age_1": 12,
+              "age_30": 25,
+              "age_44": 45,
+              "age_60": 70
+            }
+          },
+          {
+            "policyYear": 3,
+            "ratesByAge": {
+              "age_1": 35,
+              "age_30": 60,
+              "age_44": 95,
+              "age_60": 150
+            }
+          },
+          {
+            "policyYear": 4,
+            "ratesByAge": {
+              "age_1": 70,
+              "age_30": 110,
+              "age_44": 165,
+              "age_60": 240
+            }
+          },
+          {
+            "policyYear": 5,
+            "ratesByAge": {
+              "age_1": 110,
+              "age_30": 185,
+              "age_44": 285,
+              "age_60": 350
+            }
+          },
+          {
+            "policyYear": 6,
+            "ratesByAge": {
+              "age_1": 155,
+              "age_30": 250,
+              "age_44": 380,
+              "age_60": 470
+            }
+          },
+          {
+            "policyYear": 7,
+            "ratesByAge": {
+              "age_1": 205,
+              "age_30": 325,
+              "age_44": 485,
+              "age_60": 600
+            }
+          },
+          {
+            "policyYear": 8,
+            "ratesByAge": {
+              "age_1": 260,
+              "age_30": 410,
+              "age_44": 600,
+              "age_60": 740
+            }
+          },
+          {
+            "policyYear": 9,
+            "ratesByAge": {
+              "age_1": 320,
+              "age_30": 500,
+              "age_44": 720,
+              "age_60": 880
+            }
+          },
+          {
+            "policyYear": 10,
+            "ratesByAge": {
+              "age_1": 385,
+              "age_30": 605,
+              "age_44": 840,
+              "age_60": 1000
+            }
+          },
+          {
+            "policyYear": 11,
+            "ratesByAge": {
+              "age_1": 400,
+              "age_30": 625,
+              "age_44": 872,
+              "age_60": 1000
+            }
+          },
+          {
+            "policyYear": 12,
+            "ratesByAge": {
+              "age_1": 415,
+              "age_30": 645,
+              "age_44": 895,
+              "age_60": 1000
+            }
+          },
+          {
+            "policyYear": 13,
+            "ratesByAge": {
+              "age_1": 430,
+              "age_30": 665,
+              "age_44": 915,
+              "age_60": 1000
+            }
+          },
+          {
+            "policyYear": 14,
+            "ratesByAge": {
+              "age_1": 445,
+              "age_30": 685,
+              "age_44": 930,
+              "age_60": 1000
+            }
+          },
+          {
+            "policyYear": 15,
+            "ratesByAge": {
+              "age_1": 460,
+              "age_30": 710,
+              "age_44": 945,
+              "age_60": 1000
+            }
+          },
+          {
+            "policyYear": 20,
+            "ratesByAge": {
+              "age_1": 535,
+              "age_30": 800,
+              "age_44": 985,
+              "age_60": 1000
+            }
+          },
+          {
+            "policyYear": 25,
+            "ratesByAge": {
+              "age_1": 615,
+              "age_30": 865,
+              "age_44": 1000,
+              "age_60": 1000
+            }
+          },
+          {
+            "policyYear": 30,
+            "ratesByAge": {
+              "age_1": 700,
+              "age_30": 910,
+              "age_44": 1000,
+              "age_60": 1000
+            }
+          },
+          {
+            "policyYear": 40,
+            "ratesByAge": {
+              "age_1": 825,
+              "age_30": 1000,
+              "age_44": 1000,
+              "age_60": 1000
+            }
+          },
+          {
+            "policyYear": 50,
+            "ratesByAge": {
+              "age_1": 935,
+              "age_30": 1000,
+              "age_44": 1000,
+              "age_60": 1000
+            }
+          }
+        ],
+        "taxDeductionLimit": "100,000 บาท",
+        "taxRuleDescription": "เบี้ยประกันจำนวน 100,000 บาทแรกสามารถนำไปใช้สิทธิหักลดหย่อนภาษีได้เต็มจำนวน ช่วยให้บริหารจัดการภาษีบุคคลธรรมดาได้อย่างมีประสิทธิภาพสูงสุด",
+        "complianceSectionRef": "ประมวลกฎหมายแพ่งและพาณิชย์ มาตรา 865",
+        "complianceDisclaimerText": "ผู้ขอเอาประกันภัยมีหน้าที่แถลงข้อความจริงเกี่ยวกับสุขภาพ ประวัติการรักษาพยาบาล และอาชีพ ตามหลักความซื่อสัตย์อย่างยิ่ง (Utmost Good Faith) หากมีการปกปิดข้อความจริง หรือแถลงข้อความอันเป็นเท็จ บริษัทมีสิทธิบอกล้างสัญญาประกันภัยภายในระยะเวลา 2 ปีนับตั้งแต่วันเริ่มมีผลคุ้มครองตามประมวลกฎหมายแพ่งและพาณิชย์ มาตรา 865",
+        "freeLookPeriodDays": 15,
+        "incontestabilityPeriodYears": 2,
+        "suicideExclusionYears": 1,
+        "premiumHolidayRules": "สามารถแจ้งขอหยุดพักการชำระเบี้ยประกันภัยได้สูงสุด 2 ปีปฏิทิน โดยความคุ้มครองยังคงอยู่เต็มจำนวน (เงื่อนไข: ต้องชำระเบี้ยมาแล้วอย่างน้อย 3 ปีเต็ม และมีมูลค่าเงินสดคงเหลือเพียงพอหักค่าการประกันภัย) การใช้สิทธิหยุดพักชำระเบี้ยจะกระทำได้ต่อเมื่อกรมธรรม์ไม่มีหนี้สินกู้ยืม และไม่สามารถใช้สิทธิติดต่อกันเกินกว่า 2 ปี เพื่อป้องกันไม่ให้มูลค่าเงินสดลดลงจนส่งผลกระทบต่อความมั่นคงของสัญญาหลัก",
+        "partialSurrenderRules": "อนุญาตให้ผู้เอาประกันสามารถถอนมูลค่าเงินสดออกจากกรมธรรม์ได้สูงสุด 50% ของมูลค่าเวนคืน ณ ปีนั้นๆ โดยไม่ต้องปิดกรมธรรม์ (ส่งผลให้ทุนประกันและความคุ้มครองลดลงตามสัดส่วน) มูลค่าเวนคืนที่ถอนออกไปจะต้องไม่ส่งผลให้ทุนประกันภัยคงเหลือต่ำกว่าเกณฑ์ขั้นต่ำที่บริษัทกำหนดไว้คือ 100,000 บาท"
+      },
+      "supportedRiders": {
+        "ridersList": [
+          {
+            "riderName": "HealthFlex 2026",
+            "riderType": "ค่ารักษาพยาบาลเหมาจ่าย",
+            "entryAgeMin": 1,
+            "entryAgeMax": 80,
+            "renewalAgeLimit": 99,
+            "renewalNote": "ต่ออายุได้ถึงอายุ 99 ปี"
+          },
+          {
+            "riderName": "CI Multi-Pay",
+            "riderType": "โรคร้ายแรง (กลุ่มโรคยอดฮิต)",
+            "entryAgeMin": 1,
+            "entryAgeMax": 70,
+            "renewalAgeLimit": 85,
+            "renewalNote": "ต่ออายุได้ถึงอายุ 85 ปี"
+          },
+          {
+            "riderName": "PA Advance",
+            "riderType": "อุบัติเหตุส่วนบุคคล",
+            "entryAgeMin": 1,
+            "entryAgeMax": 65,
+            "renewalAgeLimit": 75,
+            "renewalNote": "ต่ออายุได้ถึงอายุ 75 ปี"
+          },
+          {
+            "riderName": "WP Disability",
+            "riderType": "ยกเว้นการชำระเบี้ย (ทุพพลภาพ)",
+            "entryAgeMin": 18,
+            "entryAgeMax": 60,
+            "renewalAgeLimit": 65,
+            "renewalNote": "คุ้มครองถึงอายุ 65 ปี หรือจนกว่าสัญญาหลักครบกำหนดชำระเบี้ย"
+          }
+        ]
       }
     }
   },
