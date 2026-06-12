@@ -62,8 +62,11 @@
       
       <!-- Workspace Header -->
       <header class="workspace-header">
-        <div class="breadcrumbs" id="breadcrumbs">
-          <span class="breadcrumb-item active">แดชบอร์ดโครงการ</span>
+        <div style="display: flex; align-items: center; gap: 1rem;">
+          <button class="sidebar-toggle" id="sidebar-toggle" aria-label="Toggle Sidebar">☰</button>
+          <div class="breadcrumbs" id="breadcrumbs">
+            <span class="breadcrumb-item active">แดชบอร์ดโครงการ</span>
+          </div>
         </div>
         <div class="user-profile">
           <span class="profile-avatar">👤</span>
@@ -76,7 +79,7 @@
         <div class="container" id="screen-container">
       
       <!-- Screen 1: Dashboard & Project Setup -->
-      <div id="screen-1">
+      <div id="screen-1" class="screen-view">
         
         <!-- Dashboard View Panel -->
         <div id="dashboard-view" style="display: none;">
@@ -188,7 +191,7 @@
       </div>
 
       <!-- Screen 2: Document Ingestion -->
-      <div class="card" id="screen-2" style="display: none;">
+      <div class="card screen-view" id="screen-2" style="display: none;">
         <h2 class="card-title">นำเข้าเอกสารประกอบ</h2>
         <p class="card-subtitle" id="project-info-subtitle">โครงการ: -</p>
         
@@ -258,7 +261,7 @@
       </div>
 
       <!-- Screen 3: Output Configuration & AI Prompting -->
-      <div class="card" id="screen-3" style="display: none;">
+      <div class="card screen-view" id="screen-3" style="display: none;">
         <h2 class="card-title">ตั้งค่าสเปกข้อมูลความต้องการและวิเคราะห์ AI</h2>
         <p class="card-subtitle" id="project-info-subtitle-s3">โครงการ: -</p>
 
@@ -322,7 +325,7 @@
       </div>
 
       <!-- Screen 4: BSA Editor & Approval -->
-      <div class="card" id="screen-4" style="display: none; max-width: 1100px; margin: 0 auto; width: 100%;">
+      <div class="card screen-view" id="screen-4" style="display: none; max-width: 1100px; margin: 0 auto; width: 100%;">
         <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.5rem; border-bottom: 2px solid var(--color-border-light); padding-bottom: 1rem; flex-wrap: wrap; gap: 1rem;">
           <h2 class="card-title" style="border-left: none; padding-left: 0; margin-bottom: 0; display: flex; align-items: center; gap: 0.75rem;">
             ตรวจสอบสเปกข้อกำหนดความต้องการ
@@ -528,6 +531,9 @@
   </div> <!-- /main-content-wrapper -->
   </div> <!-- /app-layout -->
 
+  <!-- Sidebar backdrop overlay for mobile Drawer -->
+  <div class="sidebar-overlay" id="sidebar-overlay"></div>
+
   <!-- Version Changelog Modal -->
   <div class="modal-overlay" id="changelogModal">
     <div class="modal">
@@ -592,7 +598,19 @@
   <!-- Glassmorphism Loading Overlay -->
   <div class="modal-overlay" id="loading-overlay">
     <div style="text-align: center; color: var(--color-text-dark); max-width: 500px; width: 90%; padding: 2rem; background: rgba(255, 255, 255, 0.75); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border-radius: var(--radius-lg); border: 1px solid rgba(255, 255, 255, 0.4); box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.05);">
-      <div style="font-size: 3.5rem; animation: spin 2s linear infinite; display: inline-block; margin-bottom: 1.25rem; color: var(--color-primary-navy);">⚙️</div>
+      <!-- SVG Double-ring Spinner -->
+      <div class="spinner-container" style="display: inline-flex; align-items: center; justify-content: center; margin-bottom: 1.25rem;">
+        <svg class="double-ring-spinner" width="64px" height="64px" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid">
+          <circle cx="50" cy="50" r="40" stroke="rgba(79, 70, 229, 0.15)" stroke-width="8" fill="none" />
+          <circle cx="50" cy="50" r="40" stroke="var(--color-secondary-indigo)" stroke-width="8" stroke-linecap="round" fill="none" stroke-dasharray="180 100">
+            <animateTransform attributeName="transform" type="rotate" values="0 50 50;360 50 50" keyTimes="0;1" dur="1s" repeatCount="indefinite" />
+          </circle>
+          <circle cx="50" cy="50" r="30" stroke="rgba(30, 58, 170, 0.15)" stroke-width="6" fill="none" />
+          <circle cx="50" cy="50" r="30" stroke="var(--color-primary-navy)" stroke-width="6" stroke-linecap="round" fill="none" stroke-dasharray="120 80">
+            <animateTransform attributeName="transform" type="rotate" values="360 50 50;0 50 50" keyTimes="0;1" dur="0.8s" repeatCount="indefinite" />
+          </circle>
+        </svg>
+      </div>
       <h3 style="font-size: 1.3rem; font-weight: 700; color: var(--color-primary-navy); margin-bottom: 0.5rem;" id="loading-title-text">AI กำลังวิเคราะห์ข้อมูล</h3>
       <p id="loading-status-text" style="color: var(--color-text-dark); font-weight: 500; font-size: 0.95rem; margin-bottom: 1.5rem;">กำลังเริ่มต้นกระบวนการส่งวิเคราะห์ด้วย Gemini AI...</p>
       

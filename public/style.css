@@ -1233,6 +1233,160 @@ table tbody tr:hover {
 }
 
 /* ==========================================================================
+   UI/UX Refactoring - Phase 3: Visual Polish & Transitions
+   ========================================================================== */
+
+/* Page Transitions */
+.screen-view {
+  animation: screenFadeIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  opacity: 0;
+}
+
+@keyframes screenFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Dragover Pulsing Animation */
+.dropzone-card.dragover {
+  animation: pulseBg 1.5s infinite ease-in-out;
+  border-width: 2px;
+}
+
+@keyframes pulseBg {
+  0%, 100% {
+    background-color: rgba(79, 70, 229, 0.03);
+    border-color: var(--color-secondary-indigo);
+    box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.1);
+  }
+  50% {
+    background-color: rgba(79, 70, 229, 0.08);
+    border-color: var(--color-primary-navy);
+    box-shadow: 0 0 0 6px rgba(30, 58, 170, 0.15);
+  }
+}
+
+/* Sidebar Hamburger Toggle */
+.sidebar-toggle {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  color: var(--color-text-dark);
+  cursor: pointer;
+  display: none; /* Hidden on desktop */
+  align-items: center;
+  justify-content: center;
+  padding: 0.5rem;
+  border-radius: var(--radius-md);
+  transition: all 0.2s ease;
+}
+
+.sidebar-toggle:hover {
+  background-color: var(--color-background-slate);
+  color: var(--color-primary-navy);
+}
+
+/* Sidebar Backdrop Overlay */
+.sidebar-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(15, 23, 42, 0.4);
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+  z-index: 990;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+}
+
+.sidebar-overlay.open {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* SVG Spinner and Spinner container */
+.spinner-container {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.double-ring-spinner {
+  filter: drop-shadow(0 4px 6px rgba(79, 70, 229, 0.15));
+}
+
+/* Focus outline for contenteditable fields */
+.editable-val:focus,
+.zebra-table td[contenteditable="true"]:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.15) !important;
+  border-color: var(--color-secondary-indigo) !important;
+}
+
+/* Media Queries for Mobile/Tablet layout */
+@media (max-width: 767px) {
+  .sidebar-toggle {
+    display: flex;
+  }
+  
+  .app-layout {
+    position: relative;
+    overflow-x: hidden;
+  }
+  
+  .sidebar {
+    position: fixed;
+    top: 0;
+    left: -280px; /* Off-canvas */
+    height: 100vh;
+    z-index: 1000;
+    box-shadow: none;
+    transition: left 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  
+  .sidebar.open {
+    left: 0;
+    box-shadow: 10px 0 30px rgba(15, 23, 42, 0.25);
+  }
+  
+  .main-content-wrapper {
+    width: 100vw;
+    min-width: 100vw;
+    overflow-x: hidden;
+  }
+  
+  .workspace-header {
+    padding: 0 1rem;
+  }
+  
+  .workspace-body {
+    padding: 1rem;
+  }
+  
+  .card {
+    padding: 1.5rem;
+  }
+  
+  .tabs-bar {
+    gap: 0.25rem;
+  }
+  
+  .tab-link {
+    padding: 0.5rem 0.75rem;
+    font-size: 0.85rem;
+  }
+}
+
+/* ==========================================================================
    UI/UX Refactoring - Phase 2: Dashboard Stats, Filters & Table Avatars
    ========================================================================== */
 

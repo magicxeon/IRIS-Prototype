@@ -35,12 +35,12 @@
             "description": "เลือกระยะเวลาชำระเบี้ยได้ 5, 10, หรือ 15 ปี ไม่เป็นภาระผูกพันระยะยาว"
           },
           {
-            "title": "สภาพคล่องสูง",
-            "description": "จัดการวิกฤตได้ด้วยสิทธิหยุดพักชำระเบี้ย (Premium Holiday) และการถอนมูลค่าเงินสดบางส่วน (Partial Surrender)"
+            "title": "การันตีผลตอบแทน",
+            "description": "ได้รับเงินคืนไม่น้อยกว่า 101% ของเบี้ยที่จ่ายไปเสมอ"
           },
           {
-            "title": "การันตีผลตอบแทนและคุ้มครองชีวิต",
-            "description": "ได้รับเงินคืนไม่น้อยกว่า 101% ของเบี้ยที่จ่ายไป หรือ 100% ของทุนประกันภัย แล้วแต่จำนวนใดจะมากกว่า"
+            "title": "สภาพคล่องสูง",
+            "description": "จัดการวิกฤตได้ด้วย Premium Holiday และ Partial Surrender"
           }
         ]
       },
@@ -55,7 +55,7 @@
           },
           "sumAssured": {
             "min": 100000,
-            "max": 1000000000,
+            "max": 999999999,
             "dataType": "integer",
             "unit": "THB",
             "errorMessage": "จำนวนเงินเอาประกันภัยต้องไม่น้อยกว่า 100,000 บาท"
@@ -71,11 +71,16 @@
       },
       "productCalculation": {
         "formulas": {
-          "basePremium": "(PremiumRatePer1000SA * SumAssured) / 1000",
-          "discount": "(DiscountRatePer1000SA * SumAssured) / 1000",
-          "totalPremium": "basePremium - discount"
+          "basePremium": "PremiumRatePer1000SA * (SA / 1000)",
+          "discount": "DiscountRatePer1000SA * (SA / 1000)",
+          "totalPremium": "(PremiumRatePer1000SA * (SA / 1000)) - (DiscountRatePer1000SA * (SA / 1000))"
         },
         "discountTiers": [
+          {
+            "minSA": 0,
+            "maxSA": 499999,
+            "rateDiscount": 0
+          },
           {
             "minSA": 500000,
             "maxSA": 999999,
@@ -201,7 +206,7 @@
         },
         "taxBenefit": {
           "maxDeductionLimit": 100000,
-          "ruleDescription": "เบี้ยประกันจำนวน 100,000 บาทแรกสามารถนำไปใช้สิทธิหักลดหย่อนภาษีได้เต็มจำนวน"
+          "ruleDescription": "เบี้ยประกันจำนวน 100,000 บาทแรกสามารถนำไปใช้สิทธิหักลดหย่อนภาษีได้เต็มจำนวน ช่วยให้บริหารจัดการภาษีบุคคลธรรมดาได้อย่างมีประสิทธิภาพสูงสุด"
         },
         "complianceDisclaimer": {
           "sectionReference": "ประมวลกฎหมายแพ่งและพาณิชย์ มาตรา 865",

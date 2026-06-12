@@ -24,6 +24,9 @@ document.addEventListener('DOMContentLoaded', () => {
   const sidebarProjectName = document.getElementById('sidebar-project-name');
   const sidebarProjectStatus = document.getElementById('sidebar-project-status');
   const breadcrumbs = document.getElementById('breadcrumbs');
+  const sidebarToggle = document.getElementById('sidebar-toggle');
+  const sidebarOverlay = document.getElementById('sidebar-overlay');
+  const appSidebar = document.getElementById('app-sidebar');
 
   // Changelog Modal Selectors
   const versionBadge = document.getElementById('versionBadge');
@@ -240,12 +243,22 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   };
 
+  const closeMobileSidebar = () => {
+    if (appSidebar) appSidebar.classList.remove('open');
+    if (sidebarOverlay) sidebarOverlay.classList.remove('open');
+  };
+
   const showScreen = async (screenNumber) => {
-    // Hide all screens
-    screen1.style.display = 'none';
-    screen2.style.display = 'none';
-    screen3.style.display = 'none';
-    screen4.style.display = 'none';
+    // Collapse mobile sidebar when navigating
+    closeMobileSidebar();
+
+    // Hide all screens and remove transition animation class to reset
+    [screen1, screen2, screen3, screen4].forEach(s => {
+      if (s) {
+        s.style.display = 'none';
+        s.classList.remove('screen-view');
+      }
+    });
 
     // Reset active states for sidebar navigation items
     navDashboard.classList.remove('active');
@@ -253,8 +266,15 @@ document.addEventListener('DOMContentLoaded', () => {
     navStep3.classList.remove('active');
     navStep4.classList.remove('active');
 
+    // Show active screen and trigger transition animation
+    const activeScreen = document.getElementById(`screen-${screenNumber}`);
+    if (activeScreen) {
+      activeScreen.style.display = 'block';
+      void activeScreen.offsetWidth; // Force reflow
+      activeScreen.classList.add('screen-view');
+    }
+
     if (screenNumber === 1) {
-      screen1.style.display = 'block';
       navDashboard.classList.add('active');
       sidebarProjectSection.style.display = 'none';
       updateBreadcrumbs(1);
@@ -292,15 +312,12 @@ document.addEventListener('DOMContentLoaded', () => {
       }
 
       if (screenNumber === 2) {
-        screen2.style.display = 'block';
         navStep2.classList.add('active');
         loadProjectDetails();
       } else if (screenNumber === 3) {
-        screen3.style.display = 'block';
         navStep3.classList.add('active');
         loadScreen3Details();
       } else if (screenNumber === 4) {
-        screen4.style.display = 'block';
         navStep4.classList.add('active');
         loadScreen4Details();
       }
@@ -799,6 +816,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Initialize dropzones
   Object.keys(dropzones).forEach(setupDropzoneHandlers);
+
+  // Mobile Sidebar Hamburger & Overlay click handlers
+  if (sidebarToggle) {
+    sidebarToggle.addEventListener('click', () => {
+      if (appSidebar) appSidebar.classList.toggle('open');
+      if (sidebarOverlay) sidebarOverlay.classList.toggle('open');
+    });
+  }
+
+  if (sidebarOverlay) {
+    sidebarOverlay.addEventListener('click', closeMobileSidebar);
+  }
 
   // Sidebar navigation handlers
   navDashboard.addEventListener('click', (e) => {
