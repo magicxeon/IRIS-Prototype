@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>IREBA - Insurance Requirement Extraction for Business Analyze</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- Global Header -->
+  <header>
+    <div class="brand">
+      <div class="brand-logo">IR</div>
+      <div>
+        <h1 class="brand-name">IREBA</h1>
+        <div class="brand-desc">Insurance Requirement Extraction for Business Analyze</div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Step Progress Indicator -->
+  <div class="steps-container">
+    <div class="steps">
+      <div class="step-item active" id="step1">
+        <div class="step-badge">1</div>
+        <div class="step-label">ข้อมูลโครงการ</div>
+      </div>
+      <div class="step-item" id="step2">
+        <div class="step-badge">2</div>
+        <div class="step-label">นำเข้าเอกสาร</div>
+      </div>
+      <div class="step-item" id="step3">
+        <div class="step-badge">3</div>
+        <div class="step-label">สกัดวิเคราะห์ AI</div>
+      </div>
+      <div class="step-item" id="step4">
+        <div class="step-badge">4</div>
+        <div class="step-label">ตรวจสอบ & ส่งออก</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Content Area -->
+  <main>
+    <div class="container" id="screen-container">
+      
+      <!-- Screen 1: Project Initialization -->
+      <div class="card" id="screen-1">
+        <h2 class="card-title">เริ่มต้นสร้างโครงการ</h2>
+        <p class="card-subtitle">ระบุรายละเอียดโครงการเริ่มต้นเพื่อจัดตั้งระบบฐานข้อมูลสเปกประกันภัย</p>
+        
+        <form id="project-form" novalidate>
+          <div class="form-group">
+            <label class="form-label" for="projectName">
+              ชื่อโครงการ <span class="required">*</span>
+            </label>
+            <input 
+              type="text" 
+              id="projectName" 
+              class="form-control" 
+              placeholder="เช่น FutureShield 99 Implementation"
+              required
+              minlength="3"
+              maxlength="100"
+            >
+            <div class="error-message" id="projectName-error">
+              ⚠️ ชื่อโครงการจำเป็นต้องกรอก และต้องมีขนาด 3 ถึง 100 ตัวอักษร
+            </div>
+          </div>
+          
+          <div class="form-group">
+            <label class="form-label" for="description">รายละเอียดเพิ่มเติม</label>
+            <textarea 
+              id="description" 
+              class="form-control" 
+              placeholder="ระบุวัตถุประสงค์ หรือข้อมูลเพิ่มเติมสำหรับการวิเคราะห์..."
+            ></textarea>
+          </div>
+          
+          <button type="submit" class="btn btn-primary" id="btn-submit">
+            Create Project & Continue ➜
+          </button>
+        </form>
+      </div>
+
+      <!-- Screen 2: Document Ingestion -->
+      <div class="card" id="screen-2" style="display: none;">
+        <h2 class="card-title">นำเข้าเอกสารประกอบ</h2>
+        <p class="card-subtitle" id="project-info-subtitle">โครงการ: -</p>
+        
+        <!-- Alert error container -->
+        <div class="alert-box" id="upload-alert"></div>
+        
+        <div class="dropzones-wrapper">
+          
+          <!-- Dropzone 1: Product Spec -->
+          <div class="dropzone-card" id="dropzone-productSpec" data-doctype="productSpec">
+            <div class="dropzone-default" id="default-productSpec">
+              <div class="dropzone-icon">📄</div>
+              <h3 class="dropzone-title">Product Specification</h3>
+              <p class="dropzone-desc">ไฟล์เอกสารคุณสมบัติประกันภัย<br><strong>(.pdf, .docx, .md)</strong></p>
+            </div>
+            <div class="dropzone-loading" id="loading-productSpec" style="display: none;">
+              <div class="dropzone-icon">🔄</div>
+              <h3 class="dropzone-title">กำลังอัปโหลด...</h3>
+              <p class="dropzone-desc" id="loading-file-name-productSpec" style="font-weight: 500; font-size: 0.85rem; color: var(--color-primary-navy); margin-top: 0.5rem;"></p>
+            </div>
+            <div class="file-details" id="details-productSpec" style="display: none;"></div>
+            <input type="file" id="file-productSpec" accept=".pdf,.docx,.md" style="display: none;">
+          </div>
+          
+          <!-- Dropzone 2: Pricing & Valuation -->
+          <div class="dropzone-card" id="dropzone-pricingValuation" data-doctype="pricingValuation">
+            <div class="dropzone-default" id="default-pricingValuation">
+              <div class="dropzone-icon">📊</div>
+              <h3 class="dropzone-title">Pricing & Valuation</h3>
+              <p class="dropzone-desc">อัตราเบี้ยและมูลค่าเวนคืนกรมธรรม์<br><strong>(.pdf, .csv, .xlsx, .docx)</strong></p>
+            </div>
+            <div class="dropzone-loading" id="loading-pricingValuation" style="display: none;">
+              <div class="dropzone-icon">🔄</div>
+              <h3 class="dropzone-title">กำลังอัปโหลด...</h3>
+              <p class="dropzone-desc" id="loading-file-name-pricingValuation" style="font-weight: 500; font-size: 0.85rem; color: var(--color-primary-navy); margin-top: 0.5rem;"></p>
+            </div>
+            <div class="file-details" id="details-pricingValuation" style="display: none;"></div>
+            <input type="file" id="file-pricingValuation" accept=".pdf,.csv,.xlsx,.docx" style="display: none;">
+          </div>
+          
+          <!-- Dropzone 3: Compliance -->
+          <div class="dropzone-card" id="dropzone-compliance" data-doctype="compliance">
+            <div class="dropzone-default" id="default-compliance">
+              <div class="dropzone-icon">⚖️</div>
+              <h3 class="dropzone-title">Compliance</h3>
+              <p class="dropzone-desc">เอกสารเงื่อนไขกฎหมายความสอดคล้อง<br><strong>(.pdf, .docx)</strong></p>
+            </div>
+            <div class="dropzone-loading" id="loading-compliance" style="display: none;">
+              <div class="dropzone-icon">🔄</div>
+              <h3 class="dropzone-title">กำลังอัปโหลด...</h3>
+              <p class="dropzone-desc" id="loading-file-name-compliance" style="font-weight: 500; font-size: 0.85rem; color: var(--color-primary-navy); margin-top: 0.5rem;"></p>
+            </div>
+            <div class="file-details" id="details-compliance" style="display: none;"></div>
+            <input type="file" id="file-compliance" accept=".pdf,.docx" style="display: none;">
+          </div>
+          
+        </div>
+        
+        <div class="button-group">
+          <button class="btn btn-secondary" id="btn-back-to-s1">⬅ กลับ</button>
+          <div class="btn-container-right">
+            <button class="btn btn-primary" id="btn-to-s3" disabled style="margin-top: 0; width: auto; min-width: 180px;">
+              Next to AI Analysis ➜
+            </button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <!-- Global Footer -->
+  <footer>
+    <div>&copy; 2026 IREBA Project. All rights reserved.</div>
+    <div class="version-badge" id="versionBadge" role="button" tabindex="0">
+      IREBA App Version: v3.0.0
+    </div>
+  </footer>
+
+  <!-- Version Changelog Modal -->
+  <div class="modal-overlay" id="changelogModal">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 class="modal-title">IREBA Release Notes</h3>
+        <button class="modal-close" id="modalClose">&times;</button>
+      </div>
+      <ul class="feature-list">
+        <li class="feature-item">
+          <span class="feature-icon">1</span>
+          <div class="feature-text">
+            <strong>Screen-oriented Navigation Flow</strong>
+            <span>ลำดับการกรอกและแสดงผลตามหน้าจอ 1 ถึง 4</span>
+          </div>
+        </li>
+        <li class="feature-item">
+          <span class="feature-icon">2</span>
+          <div class="feature-text">
+            <strong>Flat-file Project Storage</strong>
+            <span>บันทึกข้อมูลและสถานะการอัปโหลดอัตโนมัติลงดิสก์ projects.json</span>
+          </div>
+        </li>
+        <li class="feature-item">
+          <span class="feature-icon">3</span>
+          <div class="feature-text">
+            <strong>Gemini API Context Ingestion</strong>
+            <span>รองรับการส่งไฟล์ข้อกำหนดและโครงสร้างคำสั่งวิเคราะห์ผ่าน API Context Window</span>
+          </div>
+        </li>
+        <li class="feature-item">
+          <span class="feature-icon">4</span>
+          <div class="feature-text">
+            <strong>Actuarial Math Validation Engine</strong>
+            <span>สกัดสูตรคำนวณเบี้ยประกัน ตารางอัตราเบี้ยรายปี และตารางมูลค่าเวนคืนกรมธรรม์ออกมาเป็นรูปธรรม</span>
+          </div>
+        </li>
+        <li class="feature-item">
+          <span class="feature-icon">5</span>
+          <div class="feature-text">
+            <strong>Markdown & JSON Spec Export</strong>
+            <span>ส่งออกข้อกำหนดที่สกัดเสร็จเป็นเอกสารความต้องการเชิงวิศวกรรมซอฟต์แวร์ทันที</span>
+          </div>
+        </li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- Custom Alert Dialog Modal -->
+  <div class="modal-overlay" id="alertDialogModal" tabindex="-1">
+    <div class="modal" style="max-width: 400px; text-align: center;">
+      <div class="modal-header" style="justify-content: center; border-bottom: none; margin-bottom: 0.75rem; padding-bottom: 0;">
+        <h3 class="modal-title" id="alertModalTitle">แจ้งเตือน</h3>
+      </div>
+      <div style="font-size: 3rem; margin-bottom: 1rem; color: var(--color-primary-navy);" id="alertModalIcon">💡</div>
+      <p id="alertModalMessage" style="color: var(--color-text-dark); margin-bottom: 1.5rem; font-size: 0.95rem; line-height: 1.5; padding: 0 1rem;"></p>
+      <button class="btn btn-primary" id="btnAlertModalOk" style="margin-top: 0; width: auto; min-width: 120px;">
+        ตกลง
+      </button>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

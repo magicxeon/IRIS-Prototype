@@ -1,3 +1,6 @@
+// Set test database environment BEFORE loading any modules
+process.env.DATA_STORAGE_PATH = './data/test';
+
 const assert = require('assert');
 const fs = require('fs');
 const path = require('path');
@@ -76,6 +79,15 @@ async function runTests() {
     console.log("=> Scenario 2: ผ่าน (SUCCESS)");
   } catch (error) {
     console.error("=> Scenario 2: ล้มเหลว (FAILED):", error.message);
+  }
+
+  // Clean up test file
+  const testFile = dal.getStorageFilePath();
+  if (fs.existsSync(testFile)) {
+    try {
+      fs.unlinkSync(testFile);
+      console.log(`- ล้างไฟล์ทดสอบที่: ${testFile}`);
+    } catch (e) {}
   }
 
   console.log("\n=== การทดสอบเสร็จสิ้น ===");

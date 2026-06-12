@@ -9,6 +9,11 @@ const {
   getProjectByIdController 
 } = require('./project-controller');
 
+const {
+  uploadFileController,
+  deleteFileController
+} = require('./upload-controller');
+
 const app = express();
 const PORT = process.env.PORT || 3000;
 
@@ -24,6 +29,8 @@ app.use(express.static(path.join(__dirname, '../public')));
 app.post('/api/projects', createProjectController);
 app.get('/api/projects', getProjectsController);
 app.get('/api/projects/:projectId', getProjectByIdController);
+app.post('/api/projects/:projectId/upload', uploadFileController);
+app.delete('/api/projects/:projectId/documents/:docType', deleteFileController);
 
 // Fallback to serve index.html for single page application routing
 app.get('*', (req, res) => {

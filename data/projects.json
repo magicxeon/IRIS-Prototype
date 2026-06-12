@@ -1,9 +1,15 @@
 [
   {
-    "projectId": "PRJ-TEST-999",
-    "name": "โครงการประกันภัยทดสอบ",
+    "projectId": "PRJ-2026-001",
+    "projectName": "Futureshild99",
+    "description": "",
+    "createdAt": "2026-06-12T06:31:37.326Z",
     "status": "initialized",
-    "documents": {},
-    "createdDate": "2026-06-12T06:14:39.432Z"
+    "documents": {
+      "productSpec": null,
+      "pricingValuation": null,
+      "compliance": null
+    },
+    "extractedRequirements": null
   }
 ]
