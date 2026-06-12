@@ -29,6 +29,17 @@ document.addEventListener('DOMContentLoaded', () => {
   const alertModalIcon = document.getElementById('alertModalIcon');
   const btnAlertModalOk = document.getElementById('btnAlertModalOk');
 
+  // Screen 1: Dashboard and Project Modal Selectors
+  const dashboardView = document.getElementById('dashboard-view');
+  const emptyStateView = document.getElementById('empty-state-view');
+  const projectCreateModal = document.getElementById('projectCreateModal');
+  const btnNewProject = document.getElementById('btn-new-project');
+  const btnEmptyCreate = document.getElementById('btn-empty-create');
+  const projectCreateModalClose = document.getElementById('projectCreateModalClose');
+  const btnCancelProject = document.getElementById('btn-cancel-project');
+  const projectsTableBody = document.getElementById('projects-table-body');
+  const projectCountLabel = document.getElementById('project-count-label');
+
   // Screen 1 Form Selectors
   const projectForm = document.getElementById('project-form');
   const projectNameInput = document.getElementById('projectName');
@@ -68,6 +79,32 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   // -------------------------------------------------------------
+  // Project Creation Modal Logic
+  // -------------------------------------------------------------
+  const openCreateModal = () => {
+    projectCreateModal.classList.add('open');
+    projectNameInput.focus();
+  };
+
+  const closeCreateModal = () => {
+    projectCreateModal.classList.remove('open');
+    // Clear validation state
+    projectNameInput.value = '';
+    descriptionInput.value = '';
+    projectNameInput.style.borderColor = 'var(--color-border-light)';
+    projectNameError.style.display = 'none';
+  };
+
+  btnNewProject.addEventListener('click', openCreateModal);
+  btnEmptyCreate.addEventListener('click', openCreateModal);
+  projectCreateModalClose.addEventListener('click', closeCreateModal);
+  btnCancelProject.addEventListener('click', closeCreateModal);
+  
+  projectCreateModal.addEventListener('click', (e) => {
+    if (e.target === projectCreateModal) closeCreateModal();
+  });
+
+  // -------------------------------------------------------------
   // Changelog Modal Logic
   // -------------------------------------------------------------
   const openModal = () => {
@@ -95,12 +132,9 @@ document.addEventListener('DOMContentLoaded', () => {
   // Global Keydown Listeners (ESC Key)
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') {
-      if (changelogModal.classList.contains('open')) {
-        closeModal();
-      }
-      if (alertDialogModal.classList.contains('open')) {
-        closeAlertModal();
-      }
+      if (changelogModal.classList.contains('open')) closeModal();
+      if (projectCreateModal.classList.contains('open')) closeCreateModal();
+      if (alertDialogModal.classList.contains('open')) closeAlertModal();
     }
   });
 
@@ -121,6 +155,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (screenNumber === 1) {
       screen1.style.display = 'block';
       step1.classList.add('active');
+      loadProjectsList();
     } else if (screenNumber === 2) {
       screen2.style.display = 'block';
       step1.classList.add('completed');
@@ -141,13 +176,122 @@ document.addEventListener('DOMContentLoaded', () => {
   const showAlert = (message) => {
     uploadAlert.style.display = 'flex';
     uploadAlert.innerHTML = `<span>⚠️</span> <strong>ข้อผิดพลาด:</strong> ${message}`;
-    // Scroll alert into view
     uploadAlert.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   };
 
   const hideAlert = () => {
     uploadAlert.style.display = 'none';
     uploadAlert.textContent = '';
+  };
+
+  // -------------------------------------------------------------
+  // Screen 1: Dashboard List Loading
+  // -------------------------------------------------------------
+  const loadProjectsList = async () => {
+    try {
+      const response = await fetch('/api/projects');
+      const data = await response.json();
+
+      if (response.ok && data.success) {
+        const projects = data.projects || [];
+        projectCountLabel.textContent = `มีทั้งหมด ${projects.length} โครงการ`;
+
+        if (projects.length === 0) {
+          dashboardView.style.display = 'none';
+          emptyStateView.style.display = 'block';
+        } else {
+          emptyStateView.style.display = 'none';
+          dashboardView.style.display = 'block';
+          
+          // Sort projects by createdAt descending
+          projects.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+          // Map status values to Thai readable format
+          const statusTextMap = {
+            initialized: 'รอโหลดเอกสาร',
+            documents_uploaded: 'รอบังคับวิเคราะห์',
+            analyzed: 'วิเคราะห์แล้ว',
+            approved: 'อนุมัติแล้ว'
+          };
+
+          projectsTableBody.innerHTML = projects.map(p => {
+            const dateStr = new Date(p.createdAt).toLocaleDateString('th-TH', {
+              year: 'numeric',
+              month: 'short',
+              day: 'numeric',
+              hour: '2-digit',
+              minute: '2-digit'
+            });
+
+            const statusClass = p.status || 'initialized';
+            const statusLabel = statusTextMap[p.status] || 'ตั้งต้น';
+
+            return `
+              <tr>
+                <td style="padding: 1rem; font-weight: bold; color: var(--color-primary-navy);">${p.projectId}</td>
+                <td style="padding: 1rem;">
+                  <strong>${p.projectName}</strong>
+                  <div style="font-size: 0.8rem; color: var(--color-text-muted); margin-top: 0.25rem;">
+                    ${p.description || 'ไม่มีรายละเอียดโครงการ'}
+                  </div>
+                </td>
+                <td style="padding: 1rem; color: var(--color-text-muted);">${dateStr}</td>
+                <td style="padding: 1rem;">
+                  <span class="status-pill ${statusClass}">${statusLabel}</span>
+                </td>
+                <td style="padding: 1rem; text-align: right;">
+                  <button class="btn btn-secondary btn-open-project" data-projectid="${p.projectId}" data-status="${p.status}" style="padding: 0.4rem 0.8rem; font-size: 0.85rem; min-width: auto; margin-top: 0;">
+                    เปิดดำเนินการ ➜
+                  </button>
+                </td>
+              </tr>
+            `;
+          }).join('');
+
+          // Bind Action click handlers
+          document.querySelectorAll('.btn-open-project').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+              const projectId = e.target.getAttribute('data-projectid');
+              const status = e.target.getAttribute('data-status');
+              resumeProject(projectId, status);
+            });
+          });
+        }
+      } else {
+        showModalAlert('ดึงข้อมูลล้มเหลว', 'ไม่สามารถเชื่อมต่อดึงข้อมูลประวัติโครงการจากเซิร์ฟเวอร์ได้', '❌');
+      }
+    } catch (err) {
+      console.error(err);
+      showModalAlert('การเชื่อมต่อขัดข้อง', 'เกิดข้อผิดพลาดในการโหลดรายการโครงการ', '🌐');
+    }
+  };
+
+  const resumeProject = (projectId, status) => {
+    console.log(`Resuming project: ${projectId} with status: ${status}`);
+    currentProjectId = projectId;
+    localStorage.setItem('currentProjectId', projectId);
+
+    if (status === 'initialized') {
+      showScreen(2);
+    } else if (status === 'documents_uploaded') {
+      // Navigate to Screen 3
+      showScreen(2); // Fallback to Screen 2
+      showModalAlert(
+        'กำลังเปิดระบบวิเคราะห์', 
+        `โครงการ ${projectId} อัปโหลดเอกสารไว้แล้ว ระบบกำลังส่งต่อคุณไปยังหน้าจอวิเคราะห์ (เนื่องจาก Screen 3 อยู่ในระหว่างรอพัฒนาส่วนงานถัดไป ระบบจะพาคุณมาพักที่หน้านำเข้าเอกสารชั่วคราว)`, 
+        '⏳'
+      );
+    } else if (status === 'analyzed' || status === 'approved') {
+      // Navigate to Screen 4
+      showScreen(2); // Fallback to Screen 2
+      showModalAlert(
+        'การวิเคราะห์เสร็จสิ้น', 
+        `โครงการ ${projectId} ได้ทำการสกัดวิเคราะห์ AI หรือตรวจสอบแล้ว (เนื่องจาก Screen 4 อยู่ในระหว่างรอพัฒนาส่วนงานถัดไป ระบบจะพาคุณมาพักที่หน้านำเข้าเอกสารชั่วคราว)`, 
+        '⏳'
+      );
+    } else {
+      showScreen(2);
+    }
   };
 
   // -------------------------------------------------------------
@@ -193,14 +337,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (response.ok && data.success) {
         currentProjectId = data.projectId;
         localStorage.setItem('currentProjectId', currentProjectId);
-        
-        // Clear Form inputs
-        projectNameInput.value = '';
-        descriptionInput.value = '';
-        projectNameInput.style.borderColor = 'var(--color-border-light)';
-        projectNameError.style.display = 'none';
-
-        // Go to Screen 2
+        closeCreateModal();
         showScreen(2);
       } else {
         showModalAlert('สร้างโครงการไม่สำเร็จ', data.message || 'เกิดข้อผิดพลาดในการสร้างโครงการ', '❌');
@@ -331,7 +468,6 @@ document.addEventListener('DOMContentLoaded', () => {
       const data = await response.json();
 
       if (response.ok && data.success) {
-        // Reload details to sync
         await loadProjectDetails();
       } else {
         showAlert(data.message || "อัปโหลดไฟล์ไม่สำเร็จ");
@@ -423,6 +559,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Screen 2 buttons
   btnBackToS1.addEventListener('click', () => {
+    localStorage.removeItem('currentProjectId');
+    currentProjectId = null;
     showScreen(1);
   });
 

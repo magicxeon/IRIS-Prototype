@@ -45,43 +45,101 @@
   <main>
     <div class="container" id="screen-container">
       
-      <!-- Screen 1: Project Initialization -->
-      <div class="card" id="screen-1">
-        <h2 class="card-title">เริ่มต้นสร้างโครงการ</h2>
-        <p class="card-subtitle">ระบุรายละเอียดโครงการเริ่มต้นเพื่อจัดตั้งระบบฐานข้อมูลสเปกประกันภัย</p>
+      <!-- Screen 1: Dashboard & Project Setup -->
+      <div id="screen-1">
         
-        <form id="project-form" novalidate>
-          <div class="form-group">
-            <label class="form-label" for="projectName">
-              ชื่อโครงการ <span class="required">*</span>
-            </label>
-            <input 
-              type="text" 
-              id="projectName" 
-              class="form-control" 
-              placeholder="เช่น FutureShield 99 Implementation"
-              required
-              minlength="3"
-              maxlength="100"
-            >
-            <div class="error-message" id="projectName-error">
-              ⚠️ ชื่อโครงการจำเป็นต้องกรอก และต้องมีขนาด 3 ถึง 100 ตัวอักษร
+        <!-- Dashboard View Panel -->
+        <div id="dashboard-view" style="display: none;">
+          <div class="card" style="max-width: 1000px; margin: 0 auto; width: 100%;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; border-bottom: 2px solid var(--color-border-light); padding-bottom: 1rem;">
+              <div>
+                <h2 class="card-title" style="border-left: none; padding-left: 0; margin-bottom: 0;">โครงการทั้งหมด</h2>
+                <p style="font-size: 0.85rem; color: var(--color-text-muted);" id="project-count-label">มีทั้งหมด 0 โครงการ</p>
+              </div>
+              <button class="btn btn-primary" id="btn-new-project" style="margin-top: 0; width: auto; min-width: 140px;">
+                + New Project
+              </button>
+            </div>
+            
+            <div style="overflow-x: auto;">
+              <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.95rem;">
+                <thead>
+                  <tr style="border-bottom: 2px solid var(--color-border-light); color: var(--color-text-muted); font-weight: 600;">
+                    <th style="padding: 0.75rem 1rem;">รหัสโครงการ</th>
+                    <th style="padding: 0.75rem 1rem;">ชื่อโครงการ</th>
+                    <th style="padding: 0.75rem 1rem;">วันที่สร้าง</th>
+                    <th style="padding: 0.75rem 1rem;">สถานะ</th>
+                    <th style="padding: 0.75rem 1rem; text-align: right;">การจัดการ</th>
+                  </tr>
+                </thead>
+                <tbody id="projects-table-body">
+                  <!-- Dynamic rows will be inserted here -->
+                </tbody>
+              </table>
             </div>
           </div>
-          
-          <div class="form-group">
-            <label class="form-label" for="description">รายละเอียดเพิ่มเติม</label>
-            <textarea 
-              id="description" 
-              class="form-control" 
-              placeholder="ระบุวัตถุประสงค์ หรือข้อมูลเพิ่มเติมสำหรับการวิเคราะห์..."
-            ></textarea>
+        </div>
+
+        <!-- Empty State View Panel -->
+        <div id="empty-state-view" style="display: none;">
+          <div class="card" style="text-align: center; max-width: 600px; margin: 0 auto;">
+            <div style="font-size: 4rem; margin-bottom: 1rem; filter: grayscale(0.2);">📂</div>
+            <h2 class="card-title" style="border-left: none; padding-left: 0; margin-bottom: 0.5rem; justify-content: center; display: flex;">ยังไม่มีโครงการจัดตั้งในระบบ</h2>
+            <p style="color: var(--color-text-muted); margin-bottom: 2rem;">เริ่มต้นจัดทำข้อกำหนดความต้องการด้านประกันภัยด้วยการเพิ่มโครงการใหม่ตัวแรกของคุณ</p>
+            <button class="btn btn-primary" id="btn-empty-create" style="margin-top: 0; width: auto; min-width: 220px;">
+              เริ่มสร้างโครงการแรกของคุณ ➜
+            </button>
           </div>
-          
-          <button type="submit" class="btn btn-primary" id="btn-submit">
-            Create Project & Continue ➜
-          </button>
-        </form>
+        </div>
+
+        <!-- Create Project Dialog Modal -->
+        <div class="modal-overlay" id="projectCreateModal" tabindex="-1">
+          <div class="modal">
+            <div class="modal-header">
+              <h3 class="modal-title">สร้างโครงการใหม่</h3>
+              <button class="modal-close" id="projectCreateModalClose">&times;</button>
+            </div>
+            
+            <form id="project-form" novalidate>
+              <div class="form-group" style="text-align: left;">
+                <label class="form-label" for="projectName">
+                  ชื่อโครงการ <span class="required">*</span>
+                </label>
+                <input 
+                  type="text" 
+                  id="projectName" 
+                  class="form-control" 
+                  placeholder="เช่น FutureShield 99 Implementation"
+                  required
+                  minlength="3"
+                  maxlength="100"
+                >
+                <div class="error-message" id="projectName-error">
+                  ⚠️ ชื่อโครงการจำเป็นต้องกรอก และต้องมีขนาด 3 ถึง 100 ตัวอักษร
+                </div>
+              </div>
+              
+              <div class="form-group" style="text-align: left;">
+                <label class="form-label" for="description">รายละเอียดเพิ่มเติม</label>
+                <textarea 
+                  id="description" 
+                  class="form-control" 
+                  placeholder="ระบุวัตถุประสงค์ หรือข้อมูลเพิ่มเติมสำหรับการวิเคราะห์..."
+                ></textarea>
+              </div>
+              
+              <div class="button-group">
+                <button type="button" class="btn btn-secondary" id="btn-cancel-project" style="margin-top: 0; min-width: 100px;">
+                  ยกเลิก
+                </button>
+                <button type="submit" class="btn btn-primary" id="btn-submit" style="margin-top: 0; width: auto; flex: 1;">
+                  Create Project & Continue ➜
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+
       </div>
 
       <!-- Screen 2: Document Ingestion -->
