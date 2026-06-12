@@ -14,12 +14,14 @@ graph TD
     P1 --> P2[Phase 2: Dashboard Stats & Filters]
     P2 --> P3[Phase 3: Visual Polish & Transitions]
     P3 --> P4[Phase 4: Dynamic Configuration-Driven Schema]
-    P4 --> End([ตรวจสอบการทำงาน & ส่งมอบ UI ใหม่])
+    P4 --> P5[Phase 5: Spec Editor Sidebar & Vertical Tabs]
+    P5 --> End([ตรวจสอบการทำงาน & ส่งมอบ UI ใหม่])
     
     style P1 fill:#e0f2fe,stroke:#0284c7,stroke-width:2px
     style P2 fill:#f0fdf4,stroke:#16a34a,stroke-width:2px
     style P3 fill:#faf5ff,stroke:#7c3aed,stroke-width:2px
     style P4 fill:#fffbeb,stroke:#d97706,stroke-width:2px
+    style P5 fill:#fdf2f8,stroke:#db2777,stroke-width:2px
 ```
 
 ---
@@ -46,7 +48,11 @@ graph TD
   * พัฒนาหน้าแรก Screen 3 ให้วาดการ์ดเลือกหัวข้อตามไฟล์ตั้งค่า
   * พัฒนาหน้า Screen 4 ให้สร้างแท็บคอลัมน์ ตารางแก้ไข (Contenteditable) และสัญลักษณ์การจัดการแบบ Dynamic Rendering ทั้งหมด
 
+### 5. [Phase 5: การปรับปรุงแผงตรวจสอบสเปกด้วยแถบนำทางแนวตั้ง (Vertical Spec Editor Sidebar)](file:///d:/development/IRIS-Training/IRIS-Prototype/Requirements/ui-implementation-plans/phase-5-spec-editor-sidebar.md)
+* **เป้าหมายหลัก**: เปลี่ยนรูปแบบการแสดงผลของ Screen 4 จากแท็บแนวนอนด้านบนไปเป็นแถบเมนูนำทางแนวตั้งด้านซ้าย (Vertical Sidebar) เพื่อการเปลี่ยนหัวข้อที่ดูเป็นระเบียบ เรียบลื่น และเป็นมืออาชีพมากขึ้น
+
 ---
 
 ## 🚀 ลำดับการดำเนินการและการตรวจสอบ
-การปรับปรุงจะไล่ทำตาม **Phase 1 -> 2 -> 3 -> 4** เพื่อวางโครงสร้างงานทัศนศิลป์และกรอบหน้าต่างของระบบให้แข็งแรงก่อน จากนั้นใน **Phase 4** จะทำการเชื่อมต่อกลไกภายในหลังบ้านให้ยืดหยุ่นในการสกัดข้อมูลแบบ Dynamic-field
+การปรับปรุงจะไล่ทำตาม **Phase 1 -> 2 -> 3 -> 4 -> 5** เพื่อปรับปรุงส่วนควบคุมของระบบและส่วนจัดการสเปกข้อกำหนดความต้องการด้านประกันภัยให้เข้าสู่สถาปัตยกรรม Workspace ยุคใหม่อย่างสมบูรณ์แบบ
+
