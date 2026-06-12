@@ -17,15 +17,18 @@
   --color-border-light: #e2e8f0;
   --color-success-green: #10b981;
   --color-error-red: #ef4444;
-  
+
   /* Layout & Spacing */
-  --radius-lg: 1rem;       /* 16px */
-  --radius-md: 0.5rem;     /* 8px */
-  --radius-sm: 0.25rem;    /* 4px */
-  
+  --radius-lg: 1rem;
+  /* 16px */
+  --radius-md: 0.5rem;
+  /* 8px */
+  --radius-sm: 0.25rem;
+  /* 4px */
+
   /* Typography */
   --font-family-sans: 'Kanit', sans-serif;
-  
+
   /* Shadows & Glassmorphism */
   --shadow-soft: 0 4px 6px -1px rgb(0 0 0 / 0.05), 0 2px 4px -2px rgb(0 0 0 / 0.05);
   --shadow-hover: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
@@ -194,6 +197,7 @@ main {
   width: 100%;
   max-width: 1200px;
   animation: fadeInUp 0.5s ease-out;
+  margin-top: -220px;
 }
 
 @keyframes fadeInUp {
@@ -201,6 +205,7 @@ main {
     opacity: 0;
     transform: translateY(20px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -557,8 +562,15 @@ footer {
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(5px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(5px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .file-name {
@@ -620,8 +632,15 @@ footer {
 }
 
 @keyframes slideInDown {
-  from { transform: translateY(-10px); opacity: 0; }
-  to { transform: translateY(0); opacity: 1; }
+  from {
+    transform: translateY(-10px);
+    opacity: 0;
+  }
+
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
 }
 
 /* Button Navigation Layout */
@@ -655,8 +674,13 @@ footer {
 
 /* Spinner Animation */
 @keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  0% {
+    transform: rotate(0deg);
+  }
+
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
 .dropzone-loading .dropzone-icon {
@@ -683,12 +707,14 @@ footer {
 
 .status-pill.documents_uploaded {
   background-color: rgba(245, 158, 11, 0.1);
-  color: #d97706; /* Darker amber */
+  color: #d97706;
+  /* Darker amber */
 }
 
 .status-pill.analyzed {
   background-color: rgba(139, 92, 246, 0.1);
-  color: #7c3aed; /* Darker purple */
+  color: #7c3aed;
+  /* Darker purple */
 }
 
 .status-pill.approved {
@@ -697,7 +723,8 @@ footer {
 }
 
 /* Table Design System */
-table th, table td {
+table th,
+table td {
   padding: 1rem;
   border-bottom: 1px solid var(--color-border-light);
 }
@@ -710,3 +737,104 @@ table tbody tr:hover {
   background-color: rgba(15, 23, 42, 0.02);
 }
 
+/* ==========================================================================
+   Screen 3: Analysis Grid & Cards
+   ========================================================================== */
+.analysis-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 1.5rem;
+  margin: 1.5rem 0 2rem;
+}
+
+.analysis-card {
+  background-color: var(--color-surface-white);
+  border: 2px solid var(--color-border-light);
+  border-radius: var(--radius-lg);
+  padding: 1.75rem;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  position: relative;
+  outline: none;
+}
+
+.analysis-card:hover {
+  border-color: var(--color-secondary-indigo);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-soft);
+}
+
+.analysis-card:focus-visible {
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.2);
+}
+
+.analysis-card.selected {
+  border-color: var(--color-primary-navy);
+  background-color: rgba(30, 58, 170, 0.02);
+  box-shadow: 0 0 0 4px rgba(30, 58, 170, 0.1);
+}
+
+.analysis-card-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+}
+
+.analysis-card-icon {
+  font-size: 1.75rem;
+  line-height: 1;
+}
+
+.analysis-card-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--color-text-dark);
+  flex: 1;
+  line-height: 1.3;
+}
+
+.analysis-checkbox {
+  width: 1.25rem;
+  height: 1.25rem;
+  accent-color: var(--color-primary-navy);
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+}
+
+.analysis-card-desc {
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+  line-height: 1.4;
+}
+
+/* Glassmorphism Loader Styles */
+#loading-overlay {
+  background-color: rgba(15, 23, 42, 0.3);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  z-index: 2000;
+}
+
+#loading-steps-container div {
+  transition: all 0.3s ease;
+  padding: 0.5rem 0.75rem;
+  border-radius: var(--radius-md);
+}
+
+#loading-steps-container div.active-step {
+  background-color: rgba(30, 58, 170, 0.08);
+  color: var(--color-primary-navy);
+  font-weight: 600;
+}
+
+#loading-steps-container div.completed-step {
+  color: var(--color-success-green);
+}
+
+#loading-steps-container div.completed-step .step-icon-indicator {
+  color: var(--color-success-green);
+}

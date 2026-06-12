@@ -212,6 +212,70 @@
         </div>
       </div>
 
+      <!-- Screen 3: Output Configuration & AI Prompting -->
+      <div class="card" id="screen-3" style="display: none;">
+        <h2 class="card-title">ตั้งค่าสเปกข้อมูลความต้องการและวิเคราะห์ AI</h2>
+        <p class="card-subtitle" id="project-info-subtitle-s3">โครงการ: -</p>
+
+        <p style="font-size: 0.95rem; color: var(--color-text-dark); margin-bottom: 1.5rem; font-weight: 500;">
+          กรุณาเลือกหัวข้อความต้องการที่ต้องการสกัดวิเคราะห์ด้วย Gemini AI (เลือกอย่างน้อย 1 หัวข้อ):
+        </p>
+
+        <!-- Selection Grid -->
+        <div class="analysis-grid">
+          
+          <!-- Card 1: Landing Page -->
+          <div class="analysis-card" data-section="landingPage" role="button" tabindex="0">
+            <div class="analysis-card-header">
+              <span class="analysis-card-icon">🌐</span>
+              <h3 class="analysis-card-title">Landing Page Specifications</h3>
+              <input type="checkbox" id="chk-landingPage" class="analysis-checkbox" tabindex="-1">
+            </div>
+            <p class="analysis-card-desc">สกัดข้อมูลชื่อผลิตภัณฑ์ทางการค้า สโลแกนสั้นๆ และจุดเด่น 3 ข้อสำหรับใช้ประชาสัมพันธ์หน้าแรก</p>
+          </div>
+
+          <!-- Card 2: Quick Quote -->
+          <div class="analysis-card" data-section="quickQuote" role="button" tabindex="0">
+            <div class="analysis-card-header">
+              <span class="analysis-card-icon">📝</span>
+              <h3 class="analysis-card-title">Quick Quote Validation</h3>
+              <input type="checkbox" id="chk-quickQuote" class="analysis-checkbox" tabindex="-1">
+            </div>
+            <p class="analysis-card-desc">วิเคราะห์เงื่อนไขขีดจำกัดตัวแปรสำหรับเสนอขาย ได้แก่ ขีดจำกัดอายุ ทุนประกัน และระยะเวลาชำระเบี้ย</p>
+          </div>
+
+          <!-- Card 3: Product Calculation -->
+          <div class="analysis-card" data-section="productCalculation" role="button" tabindex="0">
+            <div class="analysis-card-header">
+              <span class="analysis-card-icon">🧮</span>
+              <h3 class="analysis-card-title">Product Calculation Engine</h3>
+              <input type="checkbox" id="chk-productCalculation" class="analysis-checkbox" tabindex="-1">
+            </div>
+            <p class="analysis-card-desc">สกัดสูตรคำนวณเบี้ยประกัน ส่วนลดสะสม ตารางสัดส่วนส่วนลด และตารางเบี้ยรายปีต่อทุน 1,000 บาท</p>
+          </div>
+
+          <!-- Card 4: Sale Proposal & Compliance -->
+          <div class="analysis-card" data-section="saleProposal" role="button" tabindex="0">
+            <div class="analysis-card-header">
+              <span class="analysis-card-icon">⚖️</span>
+              <h3 class="analysis-card-title">Sale Proposal & Compliance</h3>
+              <input type="checkbox" id="chk-saleProposal" class="analysis-checkbox" tabindex="-1">
+            </div>
+            <p class="analysis-card-desc">สกัดตารางมูลค่าเวนคืนกรมธรรม์ 10 ปี, สิทธิ์ประโยชน์ลดหย่อนภาษี และข้อความแจ้งเตือนกฎหมายตาม ป.พ.พ. 865</p>
+          </div>
+
+        </div>
+
+        <div class="button-group" style="margin-top: 2.5rem;">
+          <button class="btn btn-secondary" id="btn-back-to-s2">⬅ กลับ</button>
+          <div class="btn-container-right">
+            <button class="btn btn-primary" id="btn-analyze-gemini" style="margin-top: 0; width: auto; min-width: 220px;">
+              Analyze with Gemini AI 🚀
+            </button>
+          </div>
+        </div>
+      </div>
+
     </div>
   </main>
 
@@ -281,6 +345,35 @@
       <button class="btn btn-primary" id="btnAlertModalOk" style="margin-top: 0; width: auto; min-width: 120px;">
         ตกลง
       </button>
+    </div>
+  </div>
+
+  <!-- Glassmorphism Loading Overlay -->
+  <div class="modal-overlay" id="loading-overlay">
+    <div style="text-align: center; color: var(--color-text-dark); max-width: 500px; width: 90%; padding: 2rem; background: rgba(255, 255, 255, 0.75); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border-radius: var(--radius-lg); border: 1px solid rgba(255, 255, 255, 0.4); box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.05);">
+      <div style="font-size: 3.5rem; animation: spin 2s linear infinite; display: inline-block; margin-bottom: 1.25rem; color: var(--color-primary-navy);">⚙️</div>
+      <h3 style="font-size: 1.3rem; font-weight: 700; color: var(--color-primary-navy); margin-bottom: 0.5rem;" id="loading-title-text">AI กำลังวิเคราะห์ข้อมูล</h3>
+      <p id="loading-status-text" style="color: var(--color-text-dark); font-weight: 500; font-size: 0.95rem; margin-bottom: 1.5rem;">กำลังเริ่มต้นกระบวนการส่งวิเคราะห์ด้วย Gemini AI...</p>
+      
+      <!-- Progress steps list inside loading overlay -->
+      <div style="text-align: left; display: flex; flex-direction: column; gap: 0.75rem; border-top: 1px solid var(--color-border-light); padding-top: 1rem; font-size: 0.85rem; color: var(--color-text-muted);" id="loading-steps-container">
+        <div style="display: flex; align-items: center; justify-content: space-between;" id="loading-step-landingPage">
+          <span>1. สกัดข้อมูลผลิตภัณฑ์พื้นฐาน (Landing Page)</span>
+          <span class="step-icon-indicator" style="font-size: 1.1rem; font-weight: bold; margin-left: 0.5rem;">⚪</span>
+        </div>
+        <div style="display: flex; align-items: center; justify-content: space-between;" id="loading-step-quickQuote">
+          <span>2. วิเคราะห์เกณฑ์รับประกันภัย (Quick Quote)</span>
+          <span class="step-icon-indicator" style="font-size: 1.1rem; font-weight: bold; margin-left: 0.5rem;">⚪</span>
+        </div>
+        <div style="display: flex; align-items: center; justify-content: space-between;" id="loading-step-productCalculation">
+          <span>3. สกัดสูตรและตารางเบี้ยประกันภัย (Calculation)</span>
+          <span class="step-icon-indicator" style="font-size: 1.1rem; font-weight: bold; margin-left: 0.5rem;">⚪</span>
+        </div>
+        <div style="display: flex; align-items: center; justify-content: space-between;" id="loading-step-saleProposal">
+          <span>4. สกัดมูลค่าเวนคืนกรมธรรม์และข้อกฎหมาย (Compliance)</span>
+          <span class="step-icon-indicator" style="font-size: 1.1rem; font-weight: bold; margin-left: 0.5rem;">⚪</span>
+        </div>
+      </div>
     </div>
   </div>
 

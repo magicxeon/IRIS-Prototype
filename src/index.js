@@ -14,6 +14,11 @@ const {
   deleteFileController
 } = require('./upload-controller');
 
+const {
+  testGeminiConnectionController,
+  analyzeSectionController
+} = require('./gemini-controller');
+
 const app = express();
 const PORT = process.env.PORT || 3000;
 
@@ -31,6 +36,8 @@ app.get('/api/projects', getProjectsController);
 app.get('/api/projects/:projectId', getProjectByIdController);
 app.post('/api/projects/:projectId/upload', uploadFileController);
 app.delete('/api/projects/:projectId/documents/:docType', deleteFileController);
+app.get('/api/healthcheck/gemini', testGeminiConnectionController);
+app.post('/api/projects/:projectId/analyze/:sectionType', analyzeSectionController);
 
 // Fallback to serve index.html for single page application routing
 app.get('*', (req, res) => {

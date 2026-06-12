@@ -4,11 +4,26 @@
     "projectName": "Futureshild99",
     "description": "",
     "createdAt": "2026-06-12T06:31:37.326Z",
-    "status": "initialized",
+    "status": "documents_uploaded",
     "documents": {
-      "productSpec": null,
-      "pricingValuation": null,
-      "compliance": null
+      "productSpec": {
+        "fileName": "ProductSpecification-FutureShield99V2.docx",
+        "fileSize": 13842,
+        "uploadedAt": "2026-06-12T07:20:07.841Z",
+        "tempPath": "uploads\\file-1781248807837-763693611.docx"
+      },
+      "pricingValuation": {
+        "fileName": "Pricing & Valuation - FutureShield 99 V2.docx",
+        "fileSize": 12959,
+        "uploadedAt": "2026-06-12T07:20:18.174Z",
+        "tempPath": "uploads\\file-1781248818173-175466858.docx"
+      },
+      "compliance": {
+        "fileName": "Compliance & Anti-Fraud Specification - FutureShield 99.docx",
+        "fileSize": 10938,
+        "uploadedAt": "2026-06-12T07:20:22.136Z",
+        "tempPath": "uploads\\file-1781248822135-685447246.docx"
+      }
     },
     "extractedRequirements": null
   }

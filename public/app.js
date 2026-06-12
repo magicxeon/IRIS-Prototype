@@ -10,6 +10,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // Screen Elements
   const screen1 = document.getElementById('screen-1');
   const screen2 = document.getElementById('screen-2');
+  const screen3 = document.getElementById('screen-3');
   
   // Step Indicators
   const step1 = document.getElementById('step1');
@@ -57,6 +58,15 @@ document.addEventListener('DOMContentLoaded', () => {
     pricingValuation: document.getElementById('dropzone-pricingValuation'),
     compliance: document.getElementById('dropzone-compliance')
   };
+
+  // Screen 3 Selectors
+  const projectInfoSubtitleS3 = document.getElementById('project-info-subtitle-s3');
+  const btnBackToS2 = document.getElementById('btn-back-to-s2');
+  const btnAnalyzeGemini = document.getElementById('btn-analyze-gemini');
+  const loadingOverlay = document.getElementById('loading-overlay');
+  const loadingStatusText = document.getElementById('loading-status-text');
+  const loadingTitleText = document.getElementById('loading-title-text');
+  const analysisCards = document.querySelectorAll('.analysis-card');
 
   // -------------------------------------------------------------
   // Custom Alert Modal Logic
@@ -145,6 +155,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Hide all screens
     screen1.style.display = 'none';
     screen2.style.display = 'none';
+    screen3.style.display = 'none';
 
     // Reset step styles
     step1.className = 'step-item';
@@ -161,6 +172,12 @@ document.addEventListener('DOMContentLoaded', () => {
       step1.classList.add('completed');
       step2.classList.add('active');
       loadProjectDetails();
+    } else if (screenNumber === 3) {
+      screen3.style.display = 'block';
+      step1.classList.add('completed');
+      step2.classList.add('completed');
+      step3.classList.add('active');
+      loadScreen3Details();
     }
   };
 
@@ -274,20 +291,14 @@ document.addEventListener('DOMContentLoaded', () => {
     if (status === 'initialized') {
       showScreen(2);
     } else if (status === 'documents_uploaded') {
-      // Navigate to Screen 3
-      showScreen(2); // Fallback to Screen 2
-      showModalAlert(
-        'กำลังเปิดระบบวิเคราะห์', 
-        `โครงการ ${projectId} อัปโหลดเอกสารไว้แล้ว ระบบกำลังส่งต่อคุณไปยังหน้าจอวิเคราะห์ (เนื่องจาก Screen 3 อยู่ในระหว่างรอพัฒนาส่วนงานถัดไป ระบบจะพาคุณมาพักที่หน้านำเข้าเอกสารชั่วคราว)`, 
-        '⏳'
-      );
+      showScreen(3);
     } else if (status === 'analyzed' || status === 'approved') {
-      // Navigate to Screen 4
-      showScreen(2); // Fallback to Screen 2
+      // สำหรับสเตปถัดไป Screen 4 แต่ตอนนี้ส่งไป Screen 3 ก่อน เพื่อดูผลลัพธ์หรือรันซ้ำ
+      showScreen(3);
       showModalAlert(
         'การวิเคราะห์เสร็จสิ้น', 
-        `โครงการ ${projectId} ได้ทำการสกัดวิเคราะห์ AI หรือตรวจสอบแล้ว (เนื่องจาก Screen 4 อยู่ในระหว่างรอพัฒนาส่วนงานถัดไป ระบบจะพาคุณมาพักที่หน้านำเข้าเอกสารชั่วคราว)`, 
-        '⏳'
+        `โครงการ ${projectId} ได้ทำการสกัดวิเคราะห์ AI เรียบร้อยแล้ว (คุณสามารถเลือกหัวข้อเพื่อวิเคราะห์ใหม่ หรือรอพัฒนาหน้าตรวจสอบสเปกในขั้นตอนถัดไป)`, 
+        '✅'
       );
     } else {
       showScreen(2);
@@ -565,14 +576,242 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   btnToS3.addEventListener('click', () => {
-    showModalAlert('อยู่ระหว่างรอพัฒนา', 'ระบบส่วนที่ 3 (Screen 3: AI Output Configuration) กำลังรอพัฒนาในส่วนงานถัดไปครับ!', '⏳');
+    showScreen(3);
+  });
+
+  // -------------------------------------------------------------
+  // Screen 3: Output Configuration & AI Prompting Logic
+  // -------------------------------------------------------------
+  const loadScreen3Details = async () => {
+    if (!currentProjectId) {
+      showScreen(1);
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/projects/${currentProjectId}`);
+      const data = await response.json();
+
+      if (response.ok && data.success) {
+        const project = data.project;
+        projectInfoSubtitleS3.innerHTML = `โครงการ: <strong>${project.projectName}</strong> (${project.projectId})`;
+        
+        // ตรวจสอบข้อมูลความต้องการเดิมว่ามีอยู่หรือไม่ เพื่อเลือกตัวเลือกเดิมให้อัตโนมัติ
+        const reqs = project.extractedRequirements || {};
+        const sections = ['landingPage', 'quickQuote', 'productCalculation', 'saleProposal'];
+        
+        sections.forEach(sec => {
+          const card = document.querySelector(`.analysis-card[data-section="${sec}"]`);
+          const chk = document.getElementById(`chk-${sec}`);
+          
+          if (reqs[sec]) {
+            card.classList.add('selected');
+            chk.checked = true;
+          } else {
+            card.classList.remove('selected');
+            chk.checked = false;
+          }
+        });
+        
+        updateAnalyzeButtonState();
+      } else {
+        localStorage.removeItem('currentProjectId');
+        currentProjectId = null;
+        showScreen(1);
+      }
+    } catch (err) {
+      console.error(err);
+      showModalAlert("ข้อผิดพลาด", "ไม่สามารถโหลดรายละเอียดโครงการสำหรับวิเคราะห์ได้", "❌");
+    }
+  };
+
+  const updateAnalyzeButtonState = () => {
+    const selectedCount = document.querySelectorAll('.analysis-card.selected').length;
+    btnAnalyzeGemini.disabled = selectedCount === 0;
+  };
+
+  // ผูกการคลิกเลือกกล่องการ์ดวิเคราะห์
+  analysisCards.forEach(card => {
+    const chk = card.querySelector('.analysis-checkbox');
+    const secName = card.getAttribute('data-section');
+
+    card.addEventListener('click', () => {
+      // ตรวจสอบว่าโดน Lock หรือไม่
+      if (chk.disabled) return;
+
+      const isSelected = card.classList.toggle('selected');
+      chk.checked = isSelected;
+      updateAnalyzeButtonState();
+    });
+
+    card.addEventListener('keydown', (e) => {
+      if (chk.disabled) return;
+      if (e.key === ' ' || e.key === 'Enter') {
+        e.preventDefault();
+        const isSelected = card.classList.toggle('selected');
+        chk.checked = isSelected;
+        updateAnalyzeButtonState();
+      }
+    });
+  });
+
+  btnBackToS2.addEventListener('click', () => {
+    showScreen(2);
+  });
+
+  btnAnalyzeGemini.addEventListener('click', async () => {
+    const selectedCards = document.querySelectorAll('.analysis-card.selected');
+    if (selectedCards.length === 0) {
+      showModalAlert('แจ้งเตือน', 'กรุณาเลือกหัวข้อสำหรับสกัดความต้องการอย่างน้อย 1 รายการ', '💡');
+      return;
+    }
+
+    // 1. ตรวจสอบการเชื่อมต่อ Gemini API ก่อนเริ่มทำงาน
+    btnAnalyzeGemini.disabled = true;
+    btnBackToS2.disabled = true;
+    analysisCards.forEach(card => {
+      card.querySelector('.analysis-checkbox').disabled = true;
+      card.style.cursor = 'not-allowed';
+    });
+
+    // แสดงหน้ากากรอโหลด Glassmorphism
+    loadingOverlay.classList.add('open');
+    loadingTitleText.textContent = "กำลังวิเคราะห์ข้อมูล";
+    loadingStatusText.textContent = "กำลังเริ่มตรวจเช็คระบบการเชื่อมต่อ Gemini API...";
+
+    // รีเซ็ตสถานะหัวข้อทั้งหมดในหน้ากากรอโหลด
+    const sections = ['landingPage', 'quickQuote', 'productCalculation', 'saleProposal'];
+    sections.forEach(sec => {
+      const stepDiv = document.getElementById(`loading-step-${sec}`);
+      const indicator = stepDiv.querySelector('.step-icon-indicator');
+      
+      stepDiv.className = ''; // ล้าง CSS classes
+      const card = document.querySelector(`.analysis-card[data-section="${sec}"]`);
+      
+      if (card.classList.contains('selected')) {
+        indicator.textContent = '⚪';
+      } else {
+        indicator.textContent = '➖';
+        stepDiv.style.opacity = '0.5';
+      }
+    });
+
+    try {
+      // ยิง Healthcheck เช็คคีย์ก่อน
+      const checkRes = await fetch('/api/healthcheck/gemini');
+      const checkData = await checkRes.json();
+      
+      if (!checkRes.ok || !checkData.success) {
+        throw new Error(checkData.error || "ไม่สามารถเชื่อมต่อ Gemini API ได้ คีย์ไม่ถูกต้องหรืออินเทอร์เน็ตขัดข้อง");
+      }
+
+      // 2. รัน Sequential AJAX request ประมวลผลทีละหัวข้อแบบลูกโซ่ (Sequential Chain)
+      const messageMap = {
+        landingPage: {
+          loading: "กำลังวิเคราะห์สกัดข้อมูลคุณสมบัติผลิตภัณฑ์ (Landing Page Spec)...",
+          success: "สกัดข้อมูลผลิตภัณฑ์เสร็จสิ้น!"
+        },
+        quickQuote: {
+          loading: "กำลังสแกนวิเคราะห์เกณฑ์ข้อจำกัดผู้เอาประกันภัย (Validation constraints)...",
+          success: "วิเคราะห์เกณฑ์เสนอขายเสร็จสิ้น!"
+        },
+        productCalculation: {
+          loading: "กำลังสกัดสูตรคำนวณ ตารางส่วนลดเบี้ย และอัตราเบี้ย (Premium formulas)...",
+          success: "สกัดสูตรเบี้ยประกันภัยเสร็จสิ้น!"
+        },
+        saleProposal: {
+          loading: "กำลังสืบค้นแผนผังตารางมูลค่าเวนคืน ลดหย่อนภาษี และข้อกฎหมาย ม. 865...",
+          success: "สกัดตารางมูลค่าเวนคืนและกฎเกณฑ์เสร็จสิ้น!"
+        }
+      };
+
+      for (const sec of sections) {
+        const card = document.querySelector(`.analysis-card[data-section="${sec}"]`);
+        if (!card.classList.contains('selected')) continue; // ข้ามตัวเลือกที่ไม่ถูกเลือก
+
+        const stepDiv = document.getElementById(`loading-step-${sec}`);
+        const indicator = stepDiv.querySelector('.step-icon-indicator');
+
+        // เปลี่ยนหัวข้อเป็น Active
+        stepDiv.classList.add('active-step');
+        indicator.textContent = '⏳';
+        loadingStatusText.textContent = messageMap[sec].loading;
+
+        // เรียก API หลังบ้านสกัดข้อมูล
+        const res = await fetch(`/api/projects/${currentProjectId}/analyze/${sec}`, {
+          method: 'POST'
+        });
+        const data = await res.json();
+
+        if (!res.ok || !data.success) {
+          indicator.textContent = '❌';
+          throw new Error(data.message || `เกิดข้อผิดพลาดในการประมวลผลหัวข้อ ${sec}`);
+        }
+
+        // อัปเดตเมื่อวิเคราะห์หัวข้อนี้สำเร็จ
+        stepDiv.classList.remove('active-step');
+        stepDiv.classList.add('completed-step');
+        indicator.textContent = '✅';
+      }
+
+      // เสร็จสิ้นทั้งหมด
+      loadingStatusText.textContent = "วิเคราะห์และสกัดข้อมูลทุกหัวข้อที่เลือกเสร็จสมบูรณ์เรียบร้อย!";
+      
+      // หน่วงเวลาเล็กน้อยเพื่อให้เห็นสถานะเสร็จสิ้นทั้งหมดชัดเจนก่อนปิด
+      setTimeout(() => {
+        loadingOverlay.classList.remove('open');
+        showModalAlert(
+          'วิเคราะห์สำเร็จ', 
+          'ระบบทำการวิเคราะห์สกัดข้อกำหนดความต้องการด้วย Gemini AI เสร็จสิ้นทั้งหมดเรียบร้อยแล้ว!', 
+          '🎉'
+        );
+        // พาผู้ใช้กลับแดชบอร์ดโครงการ เพื่อเห็นสถานะโครงการเปลี่ยนเป็นวิเคราะห์แล้ว
+        showScreen(1);
+      }, 1000);
+
+    } catch (err) {
+      console.error(err);
+      loadingOverlay.classList.remove('open');
+      showModalAlert('วิเคราะห์ล้มเหลว', err.message || 'เกิดข้อผิดพลาดขึ้นระหว่างดำเนินการวิเคราะห์ความต้องการ', '❌');
+    } finally {
+      // คืนค่า UI controls ทั้งหมดกลับมาทำงาน
+      btnAnalyzeGemini.disabled = false;
+      btnBackToS2.disabled = false;
+      analysisCards.forEach(card => {
+        card.querySelector('.analysis-checkbox').disabled = false;
+        card.style.cursor = 'pointer';
+      });
+      updateAnalyzeButtonState();
+    }
   });
 
   // -------------------------------------------------------------
   // Application Startup Logic
   // -------------------------------------------------------------
   if (currentProjectId) {
-    showScreen(2);
+    // โหลดรายละเอียดโปรเจกต์เดิม เพื่อพิจารณาว่าควรไป Screen 2 หรือ 3
+    const checkStartupProject = async () => {
+      try {
+        const response = await fetch(`/api/projects/${currentProjectId}`);
+        const data = await response.json();
+        if (response.ok && data.success) {
+          const status = data.project.status;
+          if (status === 'initialized') {
+            showScreen(2);
+          } else {
+            showScreen(3);
+          }
+        } else {
+          localStorage.removeItem('currentProjectId');
+          currentProjectId = null;
+          showScreen(1);
+        }
+      } catch (err) {
+        // Fallback
+        showScreen(2);
+      }
+    };
+    checkStartupProject();
   } else {
     showScreen(1);
   }
