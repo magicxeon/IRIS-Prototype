@@ -7,6 +7,8 @@ document.addEventListener('DOMContentLoaded', () => {
     compliance: null
   };
   let currentProjectData = null;
+  let searchTerm = '';
+  let activeStatusFilter = 'all';
 
   // Screen Elements
   const screen1 = document.getElementById('screen-1');
@@ -45,6 +47,14 @@ document.addEventListener('DOMContentLoaded', () => {
   const btnCancelProject = document.getElementById('btn-cancel-project');
   const projectsTableBody = document.getElementById('projects-table-body');
   const projectCountLabel = document.getElementById('project-count-label');
+
+  // Dashboard stats & filters selectors
+  const pillCountAll = document.getElementById('pill-count-all');
+  const pillCountPending = document.getElementById('pill-count-pending');
+  const pillCountAnalyzed = document.getElementById('pill-count-analyzed');
+  const pillCountApproved = document.getElementById('pill-count-approved');
+  const projectSearchInput = document.getElementById('project-search-input');
+  const filterPills = document.querySelectorAll('.filter-pill');
 
   // Screen 1 Form Selectors
   const projectForm = document.getElementById('project-form');
@@ -130,6 +140,23 @@ document.addEventListener('DOMContentLoaded', () => {
   
   projectCreateModal.addEventListener('click', (e) => {
     if (e.target === projectCreateModal) closeCreateModal();
+  });
+
+  // Dashboard Search & Filters Event Listeners
+  if (projectSearchInput) {
+    projectSearchInput.addEventListener('input', (e) => {
+      searchTerm = e.target.value.trim();
+      loadProjectsList();
+    });
+  }
+
+  filterPills.forEach(pill => {
+    pill.addEventListener('click', (e) => {
+      filterPills.forEach(p => p.classList.remove('active'));
+      pill.classList.add('active');
+      activeStatusFilter = pill.getAttribute('data-filter');
+      loadProjectsList();
+    });
   });
 
   // -------------------------------------------------------------
@@ -303,6 +330,46 @@ document.addEventListener('DOMContentLoaded', () => {
   // -------------------------------------------------------------
   // Screen 1: Dashboard List Loading
   // -------------------------------------------------------------
+  const getProjectInitials = (name) => {
+    if (!name) return 'PR';
+    const words = name.trim().split(/\s+/);
+    if (words.length >= 2) {
+      return (words[0][0] + words[1][0]).toUpperCase();
+    }
+    return name.substring(0, 2).toUpperCase();
+  };
+
+  const getProjectAvatarColor = (projectId) => {
+    let hash = 0;
+    const idStr = String(projectId);
+    for (let i = 0; i < idStr.length; i++) {
+      hash = idStr.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    const gradients = [
+      'linear-gradient(135deg, #4f46e5, #06b6d4)', // Indigo to Cyan
+      'linear-gradient(135deg, #10b981, #059669)', // Emerald to Green
+      'linear-gradient(135deg, #6366f1, #a855f7)', // Indigo to Purple
+      'linear-gradient(135deg, #f59e0b, #d97706)', // Amber to Orange
+      'linear-gradient(135deg, #3b82f6, #1d4ed8)', // Blue to Navy
+      'linear-gradient(135deg, #ec4899, #f43f5e)'  // Pink to Rose
+    ];
+    const index = Math.abs(hash) % gradients.length;
+    return gradients[index];
+  };
+  const formatPillCount = (el, count) => {
+    if (!el) return;
+    if (count > 99) {
+      el.textContent = '99+';
+      el.title = `จำนวนจริง: ${count} โครงการ`;
+    } else {
+      el.textContent = count;
+      el.removeAttribute('title');
+    }
+  };
+
+  // -------------------------------------------------------------
+  // Screen 1: Dashboard List Loading
+  // -------------------------------------------------------------
   const loadProjectsList = async () => {
     try {
       const response = await fetch('/api/projects');
@@ -310,17 +377,57 @@ document.addEventListener('DOMContentLoaded', () => {
 
       if (response.ok && data.success) {
         const projects = data.projects || [];
-        projectCountLabel.textContent = `มีทั้งหมด ${projects.length} โครงการ`;
+        
+        // 1. Calculate Real-time Statistics
+        const totalCount = projects.length;
+        const pendingCount = projects.filter(p => p.status === 'initialized' || p.status === 'documents_uploaded').length;
+        const analyzedCount = projects.filter(p => p.status === 'analyzed').length;
+        const approvedCount = projects.filter(p => p.status === 'approved').length;
 
-        if (projects.length === 0) {
+        // Update inline filter pill badges
+        formatPillCount(pillCountAll, totalCount);
+        formatPillCount(pillCountPending, pendingCount);
+        formatPillCount(pillCountAnalyzed, analyzedCount);
+        formatPillCount(pillCountApproved, approvedCount);
+
+        if (totalCount === 0) {
           dashboardView.style.display = 'none';
           emptyStateView.style.display = 'block';
         } else {
           emptyStateView.style.display = 'none';
           dashboardView.style.display = 'block';
           
+          // 2. Client-side Search and Filter application
+          let filteredProjects = projects;
+          
+          // Apply search filter
+          if (searchTerm) {
+            const query = searchTerm.toLowerCase();
+            filteredProjects = filteredProjects.filter(p => 
+              p.projectId.toLowerCase().includes(query) ||
+              p.projectName.toLowerCase().includes(query) ||
+              (p.description && p.description.toLowerCase().includes(query))
+            );
+          }
+
+          // Apply status pill filter
+          if (activeStatusFilter !== 'all') {
+            if (activeStatusFilter === 'pending') {
+              filteredProjects = filteredProjects.filter(p => p.status === 'initialized' || p.status === 'documents_uploaded');
+            } else {
+              filteredProjects = filteredProjects.filter(p => p.status === activeStatusFilter);
+            }
+          }
+
+          // Update count label with results mapping
+          if (searchTerm || activeStatusFilter !== 'all') {
+            projectCountLabel.textContent = `พบ ${filteredProjects.length} โครงการ (จากทั้งหมด ${totalCount} โครงการ)`;
+          } else {
+            projectCountLabel.textContent = `มีทั้งหมด ${totalCount} โครงการ`;
+          }
+
           // Sort projects by createdAt descending
-          projects.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+          filteredProjects.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 
           // Map status values to Thai readable format
           const statusTextMap = {
@@ -330,61 +437,79 @@ document.addEventListener('DOMContentLoaded', () => {
             approved: 'อนุมัติแล้ว'
           };
 
-          projectsTableBody.innerHTML = projects.map(p => {
-            const dateStr = new Date(p.createdAt).toLocaleDateString('th-TH', {
-              year: 'numeric',
-              month: 'short',
-              day: 'numeric',
-              hour: '2-digit',
-              minute: '2-digit'
-            });
-
-            const statusClass = p.status || 'initialized';
-            const statusLabel = statusTextMap[p.status] || 'ตั้งต้น';
-
-            // กำหนด label + สไตล์ปุ่มตามสถานะ
-            let btnLabel, btnStyle;
-            if (p.status === 'approved') {
-              btnLabel = 'ดูรายงาน ✅';
-              btnStyle = 'padding: 0.4rem 0.8rem; font-size: 0.85rem; min-width: auto; margin-top: 0; background: linear-gradient(135deg,#059669,#047857); color:white; border:none;';
-            } else if (p.status === 'analyzed') {
-              btnLabel = 'ดูผลลัพธ์ 📊';
-              btnStyle = 'padding: 0.4rem 0.8rem; font-size: 0.85rem; min-width: auto; margin-top: 0; background: linear-gradient(135deg,#2563eb,#1d4ed8); color:white; border:none;';
-            } else {
-              btnLabel = 'เปิดดำเนินการ ➜';
-              btnStyle = 'padding: 0.4rem 0.8rem; font-size: 0.85rem; min-width: auto; margin-top: 0;';
-            }
-
-            return `
+          if (filteredProjects.length === 0) {
+            projectsTableBody.innerHTML = `
               <tr>
-                <td style="padding: 1rem; font-weight: bold; color: var(--color-primary-navy);">${p.projectId}</td>
-                <td style="padding: 1rem;">
-                  <strong>${p.projectName}</strong>
-                  <div style="font-size: 0.8rem; color: var(--color-text-muted); margin-top: 0.25rem;">
-                    ${p.description || 'ไม่มีรายละเอียดโครงการ'}
-                  </div>
-                </td>
-                <td style="padding: 1rem; color: var(--color-text-muted);">${dateStr}</td>
-                <td style="padding: 1rem;">
-                  <span class="status-pill ${statusClass}">${statusLabel}</span>
-                </td>
-                <td style="padding: 1rem; text-align: right;">
-                  <button class="btn btn-secondary btn-open-project" data-projectid="${p.projectId}" data-status="${p.status}" style="${btnStyle}">
-                    ${btnLabel}
-                  </button>
+                <td colspan="5" style="text-align: center; padding: 2rem; color: var(--color-text-muted);">
+                  🔍 ไม่พบโครงการที่สอดคล้องกับเงื่อนไขการค้นหา
                 </td>
               </tr>
             `;
-          }).join('');
+          } else {
+            projectsTableBody.innerHTML = filteredProjects.map(p => {
+              const dateStr = new Date(p.createdAt).toLocaleDateString('th-TH', {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+              });
 
-          // Bind Action click handlers
-          document.querySelectorAll('.btn-open-project').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-              const projectId = e.target.getAttribute('data-projectid');
-              const status = e.target.getAttribute('data-status');
-              resumeProject(projectId, status);
+              const statusClass = p.status || 'initialized';
+              const statusLabel = statusTextMap[p.status] || 'ตั้งต้น';
+
+              // กำหนด label + สไตล์ปุ่มตามสถานะ
+              let btnLabel, btnStyle;
+              if (p.status === 'approved') {
+                btnLabel = 'ดูรายงาน ✅';
+                btnStyle = 'padding: 0.4rem 0.8rem; font-size: 0.85rem; min-width: auto; margin-top: 0; background: linear-gradient(135deg,#059669,#047857); color:white; border:none;';
+              } else if (p.status === 'analyzed') {
+                btnLabel = 'ดูผลลัพธ์ 📊';
+                btnStyle = 'padding: 0.4rem 0.8rem; font-size: 0.85rem; min-width: auto; margin-top: 0; background: linear-gradient(135deg,#2563eb,#1d4ed8); color:white; border:none;';
+              } else {
+                btnLabel = 'เปิดดำเนินการ ➜';
+                btnStyle = 'padding: 0.4rem 0.8rem; font-size: 0.85rem; min-width: auto; margin-top: 0;';
+              }
+
+              return `
+                <tr>
+                  <td style="padding: 1rem; font-weight: bold; color: var(--color-primary-navy);">${p.projectId}</td>
+                  <td style="padding: 1rem;">
+                    <div style="display: flex; align-items: center; gap: 0.75rem;">
+                      <div class="project-avatar-circle" style="background: ${getProjectAvatarColor(p.projectId)}">
+                        ${getProjectInitials(p.projectName)}
+                      </div>
+                      <div>
+                        <strong>${p.projectName}</strong>
+                        <div style="font-size: 0.8rem; color: var(--color-text-muted); margin-top: 0.25rem;">
+                          ${p.description || 'ไม่มีรายละเอียดโครงการ'}
+                        </div>
+                      </div>
+                    </div>
+                  </td>
+                  <td style="padding: 1rem; color: var(--color-text-muted);">${dateStr}</td>
+                  <td style="padding: 1rem;">
+                    <span class="status-pill ${statusClass}">${statusLabel}</span>
+                  </td>
+                  <td style="padding: 1rem; text-align: right;">
+                    <button class="btn btn-secondary btn-open-project" data-projectid="${p.projectId}" data-status="${p.status}" style="${btnStyle}">
+                      ${btnLabel}
+                    </button>
+                  </td>
+                </tr>
+              `;
+            }).join('');
+
+            // Bind Action click handlers
+            document.querySelectorAll('.btn-open-project').forEach(btn => {
+              btn.addEventListener('click', (e) => {
+                const targetBtn = e.target.closest('.btn-open-project');
+                const projectId = targetBtn.getAttribute('data-projectid');
+                const status = targetBtn.getAttribute('data-status');
+                resumeProject(projectId, status);
+              });
             });
-          });
+          }
         }
       } else {
         showModalAlert('ดึงข้อมูลล้มเหลว', 'ไม่สามารถเชื่อมต่อดึงข้อมูลประวัติโครงการจากเซิร์ฟเวอร์ได้', '❌');
