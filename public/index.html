@@ -8,42 +8,72 @@
 </head>
 <body>
 
-  <!-- Global Header -->
-  <header>
-    <div class="brand">
-      <div class="brand-logo">IR</div>
-      <div>
-        <h1 class="brand-name">IREBA</h1>
-        <div class="brand-desc">Insurance Requirement Extraction for Business Analyze</div>
+  <div class="app-layout">
+    
+    <!-- Left Sidebar Navigation -->
+    <aside class="sidebar" id="app-sidebar">
+      <div class="sidebar-brand">
+        <div class="brand-logo">IR</div>
+        <div class="brand-info">
+          <span class="brand-name">IREBA</span>
+          <span class="brand-desc">Requirement Extraction</span>
+        </div>
       </div>
-    </div>
-  </header>
-
-  <!-- Step Progress Indicator -->
-  <div class="steps-container">
-    <div class="steps">
-      <div class="step-item active" id="step1">
-        <div class="step-badge">1</div>
-        <div class="step-label">ข้อมูลโครงการ</div>
+      
+      <nav class="sidebar-nav">
+        <div class="nav-section-title">ระบบหลัก</div>
+        <a href="#" class="nav-item active" id="nav-dashboard">
+          <span class="nav-icon">📊</span>
+          <span class="nav-text">แดชบอร์ดโครงการ</span>
+        </a>
+        
+        <!-- Active Project Section (Dynamically updated) -->
+        <div id="sidebar-project-section" style="display: none;">
+          <div class="nav-section-title">โครงการปัจจุบัน</div>
+          <div class="sidebar-project-card">
+            <div id="sidebar-project-name" class="project-name">-</div>
+            <div id="sidebar-project-status" class="status-pill initialized" style="margin-top: 0.35rem; font-size: 0.7rem; padding: 0.2rem 0.5rem;">รอโหลดเอกสาร</div>
+          </div>
+          
+          <a href="#" class="nav-item disabled" id="nav-step2" data-screen="2">
+            <span class="nav-icon">📂</span>
+            <span class="nav-text">1. นำเข้าเอกสาร</span>
+          </a>
+          <a href="#" class="nav-item disabled" id="nav-step3" data-screen="3">
+            <span class="nav-icon">🚀</span>
+            <span class="nav-text">2. สกัดวิเคราะห์ AI</span>
+          </a>
+          <a href="#" class="nav-item disabled" id="nav-step4" data-screen="4">
+            <span class="nav-icon">👁️</span>
+            <span class="nav-text">3. ตรวจสอบ & ส่งออก</span>
+          </a>
+        </div>
+      </nav>
+      
+      <div class="sidebar-footer">
+        <div class="version-badge" id="versionBadge" role="button" tabindex="0">
+          IREBA App Version: v3.0.0
+        </div>
       </div>
-      <div class="step-item" id="step2">
-        <div class="step-badge">2</div>
-        <div class="step-label">นำเข้าเอกสาร</div>
-      </div>
-      <div class="step-item" id="step3">
-        <div class="step-badge">3</div>
-        <div class="step-label">สกัดวิเคราะห์ AI</div>
-      </div>
-      <div class="step-item" id="step4">
-        <div class="step-badge">4</div>
-        <div class="step-label">ตรวจสอบ & ส่งออก</div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Main Content Area -->
-  <main>
-    <div class="container" id="screen-container">
+    </aside>
+    
+    <!-- Main Content Area -->
+    <div class="main-content-wrapper">
+      
+      <!-- Workspace Header -->
+      <header class="workspace-header">
+        <div class="breadcrumbs" id="breadcrumbs">
+          <span class="breadcrumb-item active">แดชบอร์ดโครงการ</span>
+        </div>
+        <div class="user-profile">
+          <span class="profile-avatar">👤</span>
+          <span class="profile-name">Business Analyst</span>
+        </div>
+      </header>
+      
+      <!-- Main Content Container -->
+      <main class="workspace-body">
+        <div class="container" id="screen-container">
       
       <!-- Screen 1: Dashboard & Project Setup -->
       <div id="screen-1">
@@ -475,13 +505,13 @@
     </div>
   </main>
 
-  <!-- Global Footer -->
-  <footer>
+  <!-- Global Workspace Footer -->
+  <footer class="workspace-footer">
     <div>&copy; 2026 IREBA Project. All rights reserved.</div>
-    <div class="version-badge" id="versionBadge" role="button" tabindex="0">
-      IREBA App Version: v3.0.0
-    </div>
   </footer>
+
+  </div> <!-- /main-content-wrapper -->
+  </div> <!-- /app-layout -->
 
   <!-- Version Changelog Modal -->
   <div class="modal-overlay" id="changelogModal">

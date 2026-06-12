@@ -13,11 +13,15 @@ document.addEventListener('DOMContentLoaded', () => {
   const screen2 = document.getElementById('screen-2');
   const screen3 = document.getElementById('screen-3');
   
-  // Step Indicators
-  const step1 = document.getElementById('step1');
-  const step2 = document.getElementById('step2');
-  const step3 = document.getElementById('step3');
-  const step4 = document.getElementById('step4');
+  // Sidebar Elements & Navigation
+  const navDashboard = document.getElementById('nav-dashboard');
+  const navStep2 = document.getElementById('nav-step2');
+  const navStep3 = document.getElementById('nav-step3');
+  const navStep4 = document.getElementById('nav-step4');
+  const sidebarProjectSection = document.getElementById('sidebar-project-section');
+  const sidebarProjectName = document.getElementById('sidebar-project-name');
+  const sidebarProjectStatus = document.getElementById('sidebar-project-status');
+  const breadcrumbs = document.getElementById('breadcrumbs');
 
   // Changelog Modal Selectors
   const versionBadge = document.getElementById('versionBadge');
@@ -165,41 +169,114 @@ document.addEventListener('DOMContentLoaded', () => {
   // -------------------------------------------------------------
   // Screen Router & UI state managers
   // -------------------------------------------------------------
-  const showScreen = (screenNumber) => {
+  const updateSidebarNavStates = (status) => {
+    navStep2.classList.add('disabled');
+    navStep3.classList.add('disabled');
+    navStep4.classList.add('disabled');
+    
+    // Step 2 is always enabled once inside project workflow
+    navStep2.classList.remove('disabled');
+    
+    if (status === 'documents_uploaded') {
+      navStep3.classList.remove('disabled');
+    } else if (status === 'analyzed' || status === 'approved') {
+      navStep3.classList.remove('disabled');
+      navStep4.classList.remove('disabled');
+    }
+  };
+
+  const updateBreadcrumbs = (screenNumber, projectName = '') => {
+    if (screenNumber === 1) {
+      breadcrumbs.innerHTML = `<span class="breadcrumb-item active">แดชบอร์ดโครงการ</span>`;
+    } else {
+      let stepName = '';
+      if (screenNumber === 2) stepName = '1. นำเข้าเอกสารประกอบ';
+      else if (screenNumber === 3) stepName = '2. ตั้งค่า & วิเคราะห์ AI';
+      else if (screenNumber === 4) stepName = '3. ตรวจสอบ & ส่งออกข้อกำหนด';
+      
+      const projectDisplay = projectName ? projectName : 'กำลังโหลด...';
+      breadcrumbs.innerHTML = `
+        <span class="breadcrumb-item"><a href="#" id="breadcrumb-home" style="color: inherit; text-decoration: none;">แดชบอร์ด</a></span>
+        <span class="breadcrumb-item">${projectDisplay}</span>
+        <span class="breadcrumb-item active">${stepName}</span>
+      `;
+      
+      const breadcrumbHome = document.getElementById('breadcrumb-home');
+      if (breadcrumbHome) {
+        breadcrumbHome.addEventListener('click', (e) => {
+          e.preventDefault();
+          localStorage.removeItem('currentProjectId');
+          currentProjectId = null;
+          showScreen(1);
+        });
+      }
+    }
+  };
+
+  const showScreen = async (screenNumber) => {
     // Hide all screens
     screen1.style.display = 'none';
     screen2.style.display = 'none';
     screen3.style.display = 'none';
     screen4.style.display = 'none';
 
-    // Reset step styles
-    step1.className = 'step-item';
-    step2.className = 'step-item';
-    step3.className = 'step-item';
-    step4.className = 'step-item';
+    // Reset active states for sidebar navigation items
+    navDashboard.classList.remove('active');
+    navStep2.classList.remove('active');
+    navStep3.classList.remove('active');
+    navStep4.classList.remove('active');
 
     if (screenNumber === 1) {
       screen1.style.display = 'block';
-      step1.classList.add('active');
+      navDashboard.classList.add('active');
+      sidebarProjectSection.style.display = 'none';
+      updateBreadcrumbs(1);
       loadProjectsList();
-    } else if (screenNumber === 2) {
-      screen2.style.display = 'block';
-      step1.classList.add('completed');
-      step2.classList.add('active');
-      loadProjectDetails();
-    } else if (screenNumber === 3) {
-      screen3.style.display = 'block';
-      step1.classList.add('completed');
-      step2.classList.add('completed');
-      step3.classList.add('active');
-      loadScreen3Details();
-    } else if (screenNumber === 4) {
-      screen4.style.display = 'block';
-      step1.classList.add('completed');
-      step2.classList.add('completed');
-      step3.classList.add('completed');
-      step4.classList.add('active');
-      loadScreen4Details();
+    } else {
+      sidebarProjectSection.style.display = 'block';
+      updateBreadcrumbs(screenNumber);
+
+      // Async sync sidebar information if project is open
+      if (currentProjectId) {
+        try {
+          const response = await fetch(`/api/projects/${currentProjectId}`);
+          const data = await response.json();
+          if (response.ok && data.success) {
+            const project = data.project;
+            currentProjectData = project; // Cache locally
+            sidebarProjectName.textContent = `${project.projectName}`;
+            
+            const statusTextMap = {
+              initialized: 'รอโหลดเอกสาร',
+              documents_uploaded: 'รอบังคับวิเคราะห์',
+              analyzed: 'วิเคราะห์แล้ว',
+              approved: 'อนุมัติแล้ว'
+            };
+            const statusLabel = statusTextMap[project.status] || 'ตั้งต้น';
+            sidebarProjectStatus.textContent = statusLabel;
+            sidebarProjectStatus.className = `status-pill ${project.status}`;
+            
+            updateSidebarNavStates(project.status);
+            updateBreadcrumbs(screenNumber, project.projectName);
+          }
+        } catch (err) {
+          console.error("Sidebar sync error:", err);
+        }
+      }
+
+      if (screenNumber === 2) {
+        screen2.style.display = 'block';
+        navStep2.classList.add('active');
+        loadProjectDetails();
+      } else if (screenNumber === 3) {
+        screen3.style.display = 'block';
+        navStep3.classList.add('active');
+        loadScreen3Details();
+      } else if (screenNumber === 4) {
+        screen4.style.display = 'block';
+        navStep4.classList.add('active');
+        loadScreen4Details();
+      }
     }
   };
 
@@ -597,6 +674,32 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Initialize dropzones
   Object.keys(dropzones).forEach(setupDropzoneHandlers);
+
+  // Sidebar navigation handlers
+  navDashboard.addEventListener('click', (e) => {
+    e.preventDefault();
+    localStorage.removeItem('currentProjectId');
+    currentProjectId = null;
+    showScreen(1);
+  });
+
+  navStep2.addEventListener('click', (e) => {
+    e.preventDefault();
+    if (navStep2.classList.contains('disabled')) return;
+    showScreen(2);
+  });
+
+  navStep3.addEventListener('click', (e) => {
+    e.preventDefault();
+    if (navStep3.classList.contains('disabled')) return;
+    showScreen(3);
+  });
+
+  navStep4.addEventListener('click', (e) => {
+    e.preventDefault();
+    if (navStep4.classList.contains('disabled')) return;
+    showScreen(4);
+  });
 
   // Screen 2 buttons
   btnBackToS1.addEventListener('click', () => {

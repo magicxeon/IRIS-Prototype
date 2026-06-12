@@ -994,3 +994,240 @@ table tbody tr:hover {
   flex-direction: column;
   gap: 0.25rem;
 }
+
+/* ==========================================================================
+   UI/UX Refactoring - Phase 1: Left Sidebar Layout
+   ========================================================================== */
+
+.app-layout {
+  display: flex;
+  min-height: 100vh;
+  width: 100vw;
+  overflow: hidden;
+}
+
+.sidebar {
+  width: 280px;
+  background-color: #0f172a; /* Slate 900 */
+  color: #f8fafc; /* Slate 50 */
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  border-right: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.sidebar-brand {
+  padding: 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.sidebar-brand .brand-logo {
+  width: 2.25rem;
+  height: 2.25rem;
+  background: linear-gradient(135deg, var(--color-primary-navy), var(--color-secondary-indigo));
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-weight: 700;
+  font-size: 1.25rem;
+  box-shadow: 0 4px 6px -1px rgba(79, 70, 229, 0.2);
+}
+
+.sidebar-brand .brand-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.sidebar-brand .brand-name {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #ffffff;
+  letter-spacing: 0.05em;
+  line-height: 1.2;
+}
+
+.sidebar-brand .brand-desc {
+  font-size: 0.75rem;
+  color: #94a3b8; /* Slate 400 */
+  font-weight: 300;
+}
+
+.sidebar-nav {
+  padding: 1.5rem 1rem;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  overflow-y: auto;
+}
+
+.nav-section-title {
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: #64748b; /* Slate 500 */
+  letter-spacing: 0.05em;
+  margin-top: 1.25rem;
+  margin-bottom: 0.5rem;
+  padding-left: 0.75rem;
+}
+
+.nav-section-title:first-of-type {
+  margin-top: 0;
+}
+
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  color: #94a3b8; /* Slate 400 */
+  text-decoration: none;
+  border-radius: var(--radius-md);
+  font-size: 0.95rem;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.nav-item:hover {
+  background-color: rgba(255, 255, 255, 0.03);
+  color: #f8fafc;
+}
+
+.nav-item.active {
+  background-color: var(--color-secondary-indigo);
+  color: #ffffff;
+  box-shadow: 0 4px 10px rgba(79, 70, 229, 0.25);
+}
+
+.nav-item.disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.sidebar-project-card {
+  background-color: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: var(--radius-md);
+  padding: 0.75rem;
+  margin-bottom: 0.75rem;
+  margin-left: 0.5rem;
+  margin-right: 0.5rem;
+}
+
+.sidebar-project-card .project-name {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #ffffff;
+  word-break: break-all;
+}
+
+.sidebar-footer {
+  padding: 1rem 1.5rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.sidebar-footer .version-badge {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  font-size: 0.75rem;
+  padding: 0.35rem 0.75rem;
+  background-color: rgba(255, 255, 255, 0.03);
+  color: #64748b;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: var(--radius-md);
+}
+
+.sidebar-footer .version-badge:hover {
+  background-color: var(--color-primary-navy);
+  color: white;
+  border-color: var(--color-primary-navy);
+}
+
+.main-content-wrapper {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  background-color: var(--color-background-slate);
+  height: 100vh;
+  overflow: hidden;
+}
+
+.workspace-header {
+  height: 64px;
+  background-color: var(--color-surface-white);
+  border-bottom: 1px solid var(--color-border-light);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 2rem;
+  position: relative;
+  z-index: 40;
+  flex-shrink: 0;
+}
+
+.breadcrumbs {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+}
+
+.breadcrumb-item {
+  color: var(--color-text-muted);
+}
+
+.breadcrumb-item::after {
+  content: '/';
+  margin-left: 0.5rem;
+  color: var(--color-border-light);
+}
+
+.breadcrumb-item:last-child::after {
+  content: none;
+}
+
+.breadcrumb-item.active {
+  color: var(--color-primary-navy);
+  font-weight: 600;
+}
+
+.user-profile {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+}
+
+.profile-avatar {
+  font-size: 1.25rem;
+}
+
+.profile-name {
+  font-weight: 500;
+  color: var(--color-text-dark);
+}
+
+.workspace-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 1.5rem 2rem 2rem;
+  width: 100%;
+}
+
+.workspace-footer {
+  padding: 1rem 2rem;
+  background-color: var(--color-surface-white);
+  border-top: 1px solid var(--color-border-light);
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+  text-align: center;
+  flex-shrink: 0;
+}
