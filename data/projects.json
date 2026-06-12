@@ -306,5 +306,222 @@
       }
     },
     "approvedAt": "2026-06-12T07:40:03.105Z"
+  },
+  {
+    "projectId": "PRJ-2026-003",
+    "projectName": "New Product 2026",
+    "description": "ผลิตภัณฑ์การขายตัวใหม่เลย",
+    "createdAt": "2026-06-12T08:48:05.836Z",
+    "status": "approved",
+    "documents": {
+      "productSpec": {
+        "fileName": "ProductSpecification-FutureShield99V2.docx",
+        "fileSize": 13842,
+        "uploadedAt": "2026-06-12T08:48:20.403Z",
+        "tempPath": "uploads\\file-1781254100399-77140468.docx"
+      },
+      "pricingValuation": {
+        "fileName": "Pricing & Valuation - FutureShield 99 V2.docx",
+        "fileSize": 12959,
+        "uploadedAt": "2026-06-12T08:48:24.344Z",
+        "tempPath": "uploads\\file-1781254104332-163750296.docx"
+      },
+      "compliance": {
+        "fileName": "Compliance & Anti-Fraud Specification - FutureShield 99.docx",
+        "fileSize": 10938,
+        "uploadedAt": "2026-06-12T08:48:27.353Z",
+        "tempPath": "uploads\\file-1781254107351-216027862.docx"
+      }
+    },
+    "extractedRequirements": {
+      "landingPage": {
+        "productName": "FutureShield 99",
+        "tagline": "จ่ายสั้น จบไว คุ้มครองยาวนาน รับจบ",
+        "keyBenefits": [
+          {
+            "title": "จ่ายสั้น จบไว",
+            "description": "เลือกระยะเวลาชำระเบี้ยได้ 5, 10, หรือ 15 ปี ไม่เป็นภาระผูกพันระยะยาว"
+          },
+          {
+            "title": "การันตีผลตอบแทน",
+            "description": "ได้รับเงินคืนไม่น้อยกว่า 101% ของเบี้ยที่จ่ายไปเสมอ"
+          },
+          {
+            "title": "สภาพคล่องสูง",
+            "description": "จัดการวิกฤตได้ด้วย Premium Holiday และ Partial Surrender"
+          }
+        ]
+      },
+      "quickQuote": {
+        "validationRules": {
+          "age": {
+            "min": 1,
+            "max": 75,
+            "dataType": "integer",
+            "unit": "years",
+            "errorMessage": "Age must be between 1 and 75 years."
+          },
+          "sumAssured": {
+            "min": 100000,
+            "max": 999999999999,
+            "dataType": "integer",
+            "unit": "THB",
+            "errorMessage": "Sum Assured must be at least 100,000 THB."
+          },
+          "paymentTerm": {
+            "min": 5,
+            "max": 98,
+            "dataType": "integer",
+            "unit": "years",
+            "errorMessage": "Payment term must be between 5 and 98 years."
+          }
+        }
+      },
+      "productCalculation": {
+        "formulas": {
+          "basePremium": "(premiumRate * SA) / 1000",
+          "discount": "(discountRate * SA) / 1000",
+          "totalPremium": "((premiumRate * SA) / 1000) - ((discountRate * SA) / 1000)"
+        },
+        "discountTiers": [
+          {
+            "minSA": 100000,
+            "maxSA": 499999,
+            "rateDiscount": 0
+          },
+          {
+            "minSA": 500000,
+            "maxSA": 999999,
+            "rateDiscount": 2
+          },
+          {
+            "minSA": 1000000,
+            "maxSA": 2999999,
+            "rateDiscount": 3
+          },
+          {
+            "minSA": 3000000,
+            "maxSA": 0,
+            "rateDiscount": 4
+          }
+        ],
+        "premiumRateMatrix": {
+          "age_1": {
+            "term_5": 105.2,
+            "term_10": 55.4,
+            "term_15": 38.6,
+            "term_99": 12.5
+          },
+          "age_35": {
+            "term_5": 132.5,
+            "term_10": 71.2,
+            "term_15": 52.1,
+            "term_99": 23.5
+          },
+          "age_40": {
+            "term_5": 145.8,
+            "term_10": 79.4,
+            "term_15": 58.8,
+            "term_99": 27.8
+          },
+          "age_44": {
+            "term_5": 158.4,
+            "term_10": 86.5,
+            "term_15": 64.3,
+            "term_99": 32.1
+          },
+          "age_50": {
+            "term_5": 184.6,
+            "term_10": 102.8,
+            "term_15": 77.5,
+            "term_99": 41.5
+          },
+          "age_75": {
+            "term_5": 430.8,
+            "term_10": 260.1,
+            "term_15": 215.5,
+            "term_99": 150.4
+          }
+        }
+      },
+      "saleProposal": {
+        "benefitProjectionRules": {
+          "cashValueRates": [
+            {
+              "policyYear": 1,
+              "ratesByAge": {
+                "age_1": 0,
+                "age_30": 0,
+                "age_44": 0,
+                "age_60": 0
+              }
+            },
+            {
+              "policyYear": 2,
+              "ratesByAge": {
+                "age_1": 12,
+                "age_30": 25,
+                "age_44": 45,
+                "age_60": 70
+              }
+            },
+            {
+              "policyYear": 5,
+              "ratesByAge": {
+                "age_1": 110,
+                "age_30": 185,
+                "age_44": 285,
+                "age_60": 350
+              }
+            },
+            {
+              "policyYear": 10,
+              "ratesByAge": {
+                "age_1": 385,
+                "age_30": 605,
+                "age_44": 840,
+                "age_60": 1000
+              }
+            },
+            {
+              "policyYear": 11,
+              "ratesByAge": {
+                "age_1": 400,
+                "age_30": 625,
+                "age_44": 872,
+                "age_60": 1000
+              }
+            },
+            {
+              "policyYear": 20,
+              "ratesByAge": {
+                "age_1": 535,
+                "age_30": 800,
+                "age_44": 985,
+                "age_60": 1000
+              }
+            },
+            {
+              "policyYear": 25,
+              "ratesByAge": {
+                "age_1": 615,
+                "age_30": 865,
+                "age_44": 1000,
+                "age_60": 1000
+              }
+            }
+          ]
+        },
+        "taxBenefit": {
+          "maxDeductionLimit": 100000,
+          "ruleDescription": "เบี้ยประกันจำนวน 100,000 บาทแรกสามารถนำไปใช้สิทธิหักลดหย่อนภาษีได้เต็มจำนวน"
+        },
+        "complianceDisclaimer": {
+          "sectionReference": "3.1 หน้าที่การแถลงข้อความจริง (Duty of Disclosure)",
+          "disclaimerText": "ผู้ขอเอาประกันภัยมีหน้าที่แถลงข้อความจริงเกี่ยวกับสุขภาพ ประวัติการรักษาพยาบาล และอาชีพ ตามหลักความซื่อสัตย์อย่างยิ่ง (Utmost Good Faith) หากมีการปกปิดข้อความจริง หรือแถลงข้อความอันเป็นเท็จ บริษัทมีสิทธิบอกล้างสัญญาประกันภัยภายในระยะเวลา 2 ปีนับตั้งแต่วันเริ่มมีผลคุ้มครองตามประมวลกฎหมายแพ่งและพาณิชย์ มาตรา 865"
+        }
+      }
+    },
+    "approvedAt": "2026-06-12T08:51:43.264Z"
   }
 ]
