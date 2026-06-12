@@ -105,7 +105,7 @@ header {
 .steps-container {
   max-width: 800px;
   width: 90%;
-  margin: 2rem auto 1rem;
+  margin: 1rem auto 0.5rem;
 }
 
 .steps {
@@ -187,9 +187,9 @@ header {
 main {
   flex: 1;
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: center;
-  padding: 2rem;
+  padding: 1.25rem 2rem 2rem;
   width: 100%;
 }
 
@@ -197,7 +197,6 @@ main {
   width: 100%;
   max-width: 1200px;
   animation: fadeInUp 0.5s ease-out;
-  margin-top: -220px;
 }
 
 @keyframes fadeInUp {
@@ -665,6 +664,24 @@ footer {
   border-color: var(--color-text-muted);
 }
 
+.btn-success {
+  background: linear-gradient(135deg, #16a34a, #15803d);
+  color: white;
+  border: none;
+  box-shadow: 0 4px 14px rgba(22, 163, 74, 0.35);
+}
+
+.btn-success:hover {
+  background: linear-gradient(135deg, #15803d, #166534);
+  box-shadow: 0 6px 20px rgba(22, 163, 74, 0.45);
+  transform: translateY(-1px);
+}
+
+.btn-success:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 8px rgba(22, 163, 74, 0.3);
+}
+
 .btn-container-right {
   display: flex;
   gap: 1rem;
@@ -837,4 +854,143 @@ table tbody tr:hover {
 
 #loading-steps-container div.completed-step .step-icon-indicator {
   color: var(--color-success-green);
+}
+
+/* ==========================================================================
+   Screen 4: Tabs and Zebra Tables
+   ========================================================================== */
+.tabs-bar {
+  display: flex;
+  gap: 0.5rem;
+  border-bottom: 2px solid var(--color-border-light);
+  overflow-x: auto;
+  padding-bottom: 0.25rem;
+}
+
+.tab-link {
+  font-family: var(--font-family-sans);
+  background: none;
+  border: none;
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: var(--color-text-muted);
+  padding: 0.75rem 1.25rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border-bottom: 3px solid transparent;
+  margin-bottom: -4px;
+  white-space: nowrap;
+  border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+}
+
+.tab-link:hover {
+  color: var(--color-text-dark);
+  background-color: rgba(15, 23, 42, 0.03);
+}
+
+.tab-link.active {
+  color: var(--color-primary-navy);
+  font-weight: 600;
+  border-bottom-color: var(--color-primary-navy);
+}
+
+.tab-content-panel {
+  display: none;
+  animation: fadeIn 0.4s ease-out;
+}
+
+.tab-content-panel.active {
+  display: block;
+}
+
+/* Zebra tables */
+.zebra-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.zebra-table th,
+.zebra-table td {
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--color-border-light);
+  text-align: left;
+}
+
+.zebra-table th {
+  background-color: var(--color-background-slate);
+  color: var(--color-text-dark);
+  font-weight: 600;
+}
+
+.zebra-table tbody tr:nth-child(even) {
+  background-color: #f8fafc;
+}
+
+.zebra-table tbody tr:nth-child(odd) {
+  background-color: var(--color-surface-white);
+}
+
+.zebra-table tbody tr:hover {
+  background-color: rgba(79, 70, 229, 0.02);
+}
+
+/* Inline Editable Fields styles */
+.editable-val {
+  min-height: 28px;
+  outline: none;
+  transition: all 0.2s ease;
+  font-size: 0.95rem;
+  color: var(--color-text-dark);
+  background-color: #fafafa;
+}
+
+.editable-val[contenteditable="true"] {
+  cursor: text;
+}
+
+.editable-val[contenteditable="true"]:hover {
+  border-color: var(--color-secondary-indigo) !important;
+  background-color: rgba(79, 70, 229, 0.02);
+}
+
+.editable-val[contenteditable="true"]:focus {
+  border-color: var(--color-secondary-indigo) !important;
+  background-color: var(--color-surface-white);
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+  border-style: solid !important;
+}
+
+.editable-val[contenteditable="false"] {
+  border-color: transparent !important;
+  background-color: transparent !important;
+  cursor: default;
+  padding: 0.25rem 0 !important;
+}
+
+/* Zebra Table cells contenteditable styling */
+.zebra-table td[contenteditable="true"] {
+  cursor: text;
+  border: 1px dashed var(--color-secondary-indigo);
+  background-color: rgba(79, 70, 229, 0.01);
+  transition: all 0.2s ease;
+}
+
+.zebra-table td[contenteditable="true"]:focus {
+  background-color: var(--color-surface-white);
+  box-shadow: inset 0 0 0 2px var(--color-secondary-indigo);
+  border-style: solid;
+  outline: none;
+}
+
+.zebra-table td[contenteditable="false"] {
+  cursor: default;
+  border-style: solid;
+}
+
+.editable-field-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
 }

@@ -276,6 +276,202 @@
         </div>
       </div>
 
+      <!-- Screen 4: BSA Editor & Approval -->
+      <div class="card" id="screen-4" style="display: none; max-width: 1100px; margin: 0 auto; width: 100%;">
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.5rem; border-bottom: 2px solid var(--color-border-light); padding-bottom: 1rem; flex-wrap: wrap; gap: 1rem;">
+          <h2 class="card-title" style="border-left: none; padding-left: 0; margin-bottom: 0; display: flex; align-items: center; gap: 0.75rem;">
+            ตรวจสอบสเปกข้อกำหนดความต้องการ
+            <span class="status-pill approved" id="screen4-approved-badge" style="display: none; font-size: 0.8rem; padding: 0.35rem 0.85rem;">✓ Approved Final Spec</span>
+          </h2>
+          <p class="card-subtitle" id="project-info-subtitle-s4" style="margin-bottom: 0;">โครงการ: -</p>
+        </div>
+
+        <!-- Tab Links Bar -->
+        <div class="tabs-bar" id="tabs-bar-s4">
+          <button class="tab-link active" data-tab="tab-landingPage" id="tab-btn-landingPage">🌐 Marketing & Identity</button>
+          <button class="tab-link" data-tab="tab-quickQuote" id="tab-btn-quickQuote">📝 Quick Quote Validation</button>
+          <button class="tab-link" data-tab="tab-productCalculation" id="tab-btn-productCalculation">🧮 Calculation Engine</button>
+          <button class="tab-link" data-tab="tab-saleProposal" id="tab-btn-saleProposal">⚖️ Sale Proposal & Compliance</button>
+        </div>
+
+        <!-- Tab Contents Wrapper -->
+        <div class="tab-contents-wrapper" style="margin-top: 1.5rem;">
+          
+          <!-- Tab 1: Landing Page -->
+          <div class="tab-content-panel active" id="tab-landingPage">
+            <h3 style="font-size: 1.1rem; font-weight: 600; color: var(--color-primary-navy); margin-bottom: 1rem;">คุณสมบัติแบรนด์และการขาย (Marketing & Identity)</h3>
+            <div style="display: grid; gap: 1rem; margin-bottom: 1.5rem;">
+              <div class="editable-field-group">
+                <label style="font-size: 0.85rem; font-weight: 600; color: var(--color-text-muted);">ชื่อผลิตภัณฑ์ทางการค้า (Product Name)</label>
+                <div class="editable-val" id="val-productName" contenteditable="true" style="padding: 0.5rem; border: 1px dashed var(--color-border-light); border-radius: var(--radius-sm);"></div>
+              </div>
+              <div class="editable-field-group">
+                <label style="font-size: 0.85rem; font-weight: 600; color: var(--color-text-muted);">สโลแกนขาย (Tagline)</label>
+                <div class="editable-val" id="val-tagline" contenteditable="true" style="padding: 0.5rem; border: 1px dashed var(--color-border-light); border-radius: var(--radius-sm); min-height: 40px;"></div>
+              </div>
+            </div>
+            
+            <h4 style="font-size: 0.95rem; font-weight: 600; color: var(--color-text-dark); margin-bottom: 0.5rem;">สรุปจุดเด่นของผลิตภัณฑ์ (Key Benefits)</h4>
+            <div style="overflow-x: auto;">
+              <table class="zebra-table" style="width: 100%; font-size: 0.9rem;" id="table-keyBenefits">
+                <thead>
+                  <tr style="background-color: var(--color-background-slate); font-weight: 600;">
+                    <th style="width: 25%; text-align: left;">หัวข้อเด่น (Title)</th>
+                    <th style="width: 75%; text-align: left;">คำอธิบายสั้นๆ (Description)</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <!-- Dynamic Rows -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Tab 2: Quick Quote -->
+          <div class="tab-content-panel" id="tab-quickQuote">
+            <h3 style="font-size: 1.1rem; font-weight: 600; color: var(--color-primary-navy); margin-bottom: 1rem;">กฎเกณฑ์ขีดจำกัดข้อมูลเสนอขาย (Quick Quote Input Validation)</h3>
+            <div style="overflow-x: auto;">
+              <table class="zebra-table" style="width: 100%; font-size: 0.9rem;" id="table-validationRules">
+                <thead>
+                  <tr style="background-color: var(--color-background-slate); font-weight: 600;">
+                    <th style="width: 20%; text-align: left;">ฟิลด์นำเข้า (Variable)</th>
+                    <th style="width: 15%; text-align: left;">ขั้นต่ำ (Min)</th>
+                    <th style="width: 15%; text-align: left;">สูงสุด (Max)</th>
+                    <th style="width: 15%; text-align: left;">ชนิดข้อมูล</th>
+                    <th style="width: 15%; text-align: left;">หน่วย</th>
+                    <th style="width: 20%; text-align: left;">ข้อความแจ้งเตือนเมื่อผิดพลาด (Error Message)</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <!-- Dynamic Rows -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Tab 3: Actuarial Calculation -->
+          <div class="tab-content-panel" id="tab-productCalculation">
+            <h3 style="font-size: 1.1rem; font-weight: 600; color: var(--color-primary-navy); margin-bottom: 1rem;">สูตรคำนวณและตารางอัตราเบี้ยประกันภัย (Premium Calculation Engine)</h3>
+            
+            <h4 style="font-size: 0.95rem; font-weight: 600; color: var(--color-text-dark); margin-bottom: 0.5rem;">สูตรคำนวณเบี้ยประกัน (Formulas)</h4>
+            <div style="display: grid; gap: 0.75rem; margin-bottom: 1.5rem;">
+              <div class="editable-field-group">
+                <label style="font-size: 0.85rem; font-weight: 600; color: var(--color-text-muted);">สูตรคำนวณเบี้ยประกันภัยฐาน (basePremium)</label>
+                <div class="editable-val" id="val-formula-basePremium" contenteditable="true" style="padding: 0.5rem; border: 1px dashed var(--color-border-light); border-radius: var(--radius-sm); font-family: monospace;"></div>
+              </div>
+              <div class="editable-field-group">
+                <label style="font-size: 0.85rem; font-weight: 600; color: var(--color-text-muted);">สูตรคำนวณส่วนลดเบี้ยประกันสะสม (discount)</label>
+                <div class="editable-val" id="val-formula-discount" contenteditable="true" style="padding: 0.5rem; border: 1px dashed var(--color-border-light); border-radius: var(--radius-sm); font-family: monospace;"></div>
+              </div>
+              <div class="editable-field-group">
+                <label style="font-size: 0.85rem; font-weight: 600; color: var(--color-text-muted);">สูตรคำนวณเบี้ยสุทธิต่อปี (totalPremium)</label>
+                <div class="editable-val" id="val-formula-totalPremium" contenteditable="true" style="padding: 0.5rem; border: 1px dashed var(--color-border-light); border-radius: var(--radius-sm); font-family: monospace;"></div>
+              </div>
+            </div>
+
+            <h4 style="font-size: 0.95rem; font-weight: 600; color: var(--color-text-dark); margin-bottom: 0.5rem;">ตารางเกณฑ์ส่วนลดเบี้ยประกัน (Discount Tiers)</h4>
+            <div style="overflow-x: auto; margin-bottom: 1.5rem;">
+              <table class="zebra-table" style="width: 100%; font-size: 0.9rem;" id="table-discountTiers">
+                <thead>
+                  <tr style="background-color: var(--color-background-slate); font-weight: 600;">
+                    <th style="width: 35%; text-align: left;">ทุนประกันขั้นต่ำ (Min SA)</th>
+                    <th style="width: 35%; text-align: left;">ทุนประกันสูงสุด (Max SA)</th>
+                    <th style="width: 30%; text-align: left;">ส่วนลดต่อทุน 1,000 บาท (Discount Rate)</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <!-- Dynamic Rows -->
+                </tbody>
+              </table>
+            </div>
+
+            <h4 style="font-size: 0.95rem; font-weight: 600; color: var(--color-text-dark); margin-bottom: 0.5rem;">อัตราเบี้ยรายปีต่อทุน 1,000 บาท (Premium Rate Matrix - Male)</h4>
+            <div style="overflow-x: auto;">
+              <table class="zebra-table" style="width: 100%; font-size: 0.9rem;" id="table-premiumRateMatrix">
+                <thead>
+                  <tr style="background-color: var(--color-background-slate); font-weight: 600;">
+                    <th style="width: 20%; text-align: left;">กลุ่มอายุผู้เอาประกัน (Age)</th>
+                    <th style="width: 20%; text-align: left;">แผนชำระเบี้ย 5 ปี</th>
+                    <th style="width: 20%; text-align: left;">แผนชำระเบี้ย 10 ปี</th>
+                    <th style="width: 20%; text-align: left;">แผนชำระเบี้ย 15 ปี</th>
+                    <th style="width: 20%; text-align: left;">แผนชำระเบี้ย 99 ปี</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <!-- Dynamic Rows -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Tab 4: Sale Proposal & Compliance -->
+          <div class="tab-content-panel" id="tab-saleProposal">
+            <h3 style="font-size: 1.1rem; font-weight: 600; color: var(--color-primary-navy); margin-bottom: 1rem;">ข้อเสนอขายและเงื่อนไขความสอดคล้องทางกฎหมาย (Sale Proposal & Compliance)</h3>
+            
+            <h4 style="font-size: 0.95rem; font-weight: 600; color: var(--color-text-dark); margin-bottom: 0.5rem;">อัตรามูลค่าเวนคืนกรมธรรม์ต่อทุน 1,000 บาท (Cash Value Rates - Plan 10 years)</h4>
+            <div style="overflow-x: auto; margin-bottom: 1.5rem;">
+              <table class="zebra-table" style="width: 100%; font-size: 0.9rem;" id="table-cashValueRates">
+                <thead>
+                  <tr style="background-color: var(--color-background-slate); font-weight: 600;">
+                    <th style="width: 20%; text-align: left;">ปีที่ถือครองกรมธรรม์ (Policy Year)</th>
+                    <th style="width: 20%; text-align: left;">อายุ 1 ปี</th>
+                    <th style="width: 20%; text-align: left;">อายุ 30 ปี</th>
+                    <th style="width: 20%; text-align: left;">อายุ 44 ปี</th>
+                    <th style="width: 20%; text-align: left;">อายุ 60 ปี</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <!-- Dynamic Rows -->
+                </tbody>
+              </table>
+            </div>
+
+            <div style="display: grid; gap: 1rem; margin-bottom: 1rem;">
+              <div class="editable-field-group">
+                <label style="font-size: 0.85rem; font-weight: 600; color: var(--color-text-muted);">วงเงินลดหย่อนภาษีสูงสุด (Tax Benefit limit)</label>
+                <div class="editable-val" id="val-tax-limit" contenteditable="true" style="padding: 0.5rem; border: 1px dashed var(--color-border-light); border-radius: var(--radius-sm); font-family: monospace;"></div>
+              </div>
+              <div class="editable-field-group">
+                <label style="font-size: 0.85rem; font-weight: 600; color: var(--color-text-muted);">สูตรคำนวณสิทธิ์หักลดหย่อนภาษี (Tax Benefit description)</label>
+                <div class="editable-val" id="val-tax-desc" contenteditable="true" style="padding: 0.5rem; border: 1px dashed var(--color-border-light); border-radius: var(--radius-sm);"></div>
+              </div>
+              <div class="editable-field-group">
+                <label style="font-size: 0.85rem; font-weight: 600; color: var(--color-text-muted);">อ้างอิงบทบัญญัติข้อกฎหมาย (Compliance Reference)</label>
+                <div class="editable-val" id="val-compliance-ref" contenteditable="true" style="padding: 0.5rem; border: 1px dashed var(--color-border-light); border-radius: var(--radius-sm); font-weight: bold;"></div>
+              </div>
+              <div class="editable-field-group">
+                <label style="font-size: 0.85rem; font-weight: 600; color: var(--color-text-muted);">ข้อความแจ้งเตือนคำเตือนทางกฎหมายไทย (Compliance Disclaimer Text)</label>
+                <div class="editable-val" id="val-compliance-text" contenteditable="true" style="padding: 0.5rem; border: 1px dashed var(--color-border-light); border-radius: var(--radius-sm); min-height: 80px; line-height: 1.5;"></div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Bottom Actions Bar -->
+        <div class="button-group" style="margin-top: 2.5rem; border-top: 1px solid var(--color-border-light); padding-top: 1.5rem; flex-wrap: wrap; gap: 1rem;">
+          <button class="btn btn-secondary" id="btn-back-to-s3-or-s1">⬅ กลับ</button>
+          
+          <div class="btn-container-right" style="flex-wrap: wrap; gap: 0.6rem;">
+            <button class="btn btn-secondary" id="btn-export-json" style="margin-top: 0; width: auto; min-width: 140px;">
+              📥 Export JSON
+            </button>
+            <button class="btn btn-primary" id="btn-export-md" style="margin-top: 0; width: auto; min-width: 160px; background-color: var(--color-secondary-indigo);">
+              📝 Export Markdown
+            </button>
+            <button class="btn btn-success" id="btn-export-jira" style="margin-top: 0; width: auto; min-width: 165px; display: none;">
+              📊 Export JIRA CSV
+            </button>
+            <button class="btn btn-success" id="btn-export-word" style="margin-top: 0; width: auto; min-width: 175px; display: none; background-color: #1a6ebd;">
+              📄 Export Word (.doc)
+            </button>
+            <button class="btn btn-primary" id="btn-approve-spec" style="margin-top: 0; width: auto; min-width: 200px;">
+              Approve Final Spec ✓
+            </button>
+          </div>
+        </div>
+      </div>
+
     </div>
   </main>
 

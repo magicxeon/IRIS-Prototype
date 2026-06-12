@@ -6,7 +6,10 @@ require('dotenv').config();
 const { 
   createProjectController, 
   getProjectsController, 
-  getProjectByIdController 
+  getProjectByIdController,
+  approveProjectController,
+  exportJiraCsvController,
+  exportWordDocController
 } = require('./project-controller');
 
 const {
@@ -38,6 +41,9 @@ app.post('/api/projects/:projectId/upload', uploadFileController);
 app.delete('/api/projects/:projectId/documents/:docType', deleteFileController);
 app.get('/api/healthcheck/gemini', testGeminiConnectionController);
 app.post('/api/projects/:projectId/analyze/:sectionType', analyzeSectionController);
+app.put('/api/projects/:projectId/approve', approveProjectController);
+app.get('/api/projects/:projectId/export/jira', exportJiraCsvController);
+app.get('/api/projects/:projectId/export/word', exportWordDocController);
 
 // Fallback to serve index.html for single page application routing
 app.get('*', (req, res) => {

@@ -121,9 +121,327 @@ function getProjectByIdController(req, res) {
   }
 }
 
+/**
+ * Controller สำหรับบันทึกความต้องการที่ BSA แก้ไขและเปลี่ยนสถานะเป็นอนุมัติ
+ */
+function approveProjectController(req, res) {
+  const { projectId } = req.params;
+  const { updatedRequirements } = req.body;
+
+  if (!updatedRequirements || typeof updatedRequirements !== 'object') {
+    return res.status(400).json({
+      success: false,
+      message: "ไม่พบข้อมูลความต้องการอัปเดต หรือรูปแบบข้อมูลไม่ถูกต้อง"
+    });
+  }
+
+  try {
+    const projects = readProjects();
+    const projectIndex = projects.findIndex(p => p.projectId === projectId);
+
+    if (projectIndex === -1) {
+      return res.status(404).json({ success: false, message: "ไม่พบโครงการที่กำหนด" });
+    }
+
+    // 1. ทับข้อมูลความต้องการเดิมด้วยข้อมูลล่าสุดที่ BSA ทำการแก้ไข (BSA Final Edit)
+    projects[projectIndex].extractedRequirements = updatedRequirements;
+    
+    // 2. ปรับปรุงสถานะเป็นอนุมัติ (approved) เพื่อให้ระบบอื่นทราบว่าเป็นแบบไฟนอล
+    projects[projectIndex].status = "approved";
+    projects[projectIndex].approvedAt = new Date().toISOString();
+
+    writeProjects(projects); // บันทึกลงดิสก์ projects.json
+
+    return res.status(200).json({
+      success: true,
+      projectId,
+      status: "approved",
+      message: "โครงการได้รับการตรวจสอบและยืนยันอนุมัติขั้นสุดท้ายเรียบร้อย"
+    });
+  } catch (error) {
+    console.error("เกิดข้อผิดพลาดในการบันทึกอนุมัติโครงการ:", error);
+    return res.status(500).json({
+      success: false,
+      message: "เกิดข้อผิดพลาดภายในระบบหลังบ้าน ไม่สามารถบันทึกอนุมัติโครงการได้"
+    });
+  }
+}
+
+/**
+ * Controller สำหรับส่งออกข้อกำหนดเป็นไฟล์ JIRA CSV
+ */
+function exportJiraCsvController(req, res) {
+  const { projectId } = req.params;
+
+  try {
+    const projects = readProjects();
+    const project = projects.find(p => p.projectId === projectId);
+
+    if (!project) {
+      return res.status(404).json({ success: false, message: "ไม่พบโครงการที่อ้างอิง" });
+    }
+
+    if (project.status !== 'approved') {
+      return res.status(400).json({ success: false, message: "โครงการนี้ยังไม่ได้รับการอนุมัติขั้นสุดท้าย" });
+    }
+
+    const requirements = project.extractedRequirements || {};
+
+    // ฟังก์ชันช่วยจัดการเครื่องหมายอัญประกาศภายในข้อความ CSV
+    const escapeCsv = (str) => `"${String(str || '').replace(/"/g, '""')}"`;
+
+    // 1. ตั้งหัวข้อ CSV Headers ตามเกณฑ์ของ JIRA
+    let csvContent = "Summary,Description,Issue Type,Priority\n";
+
+    // 2. เพิ่มแถวข้อมูลจาก Landing Page
+    if (requirements.landingPage) {
+      const lp = requirements.landingPage;
+      const summary = escapeCsv(`[IREBA - Landing Page] ${lp.productName || 'Product'} - Marketing & Identity`);
+      const desc = escapeCsv(
+        `ชื่อทางการค้า: ${lp.productName || '-'}\n` +
+        `คำสโลแกน: ${lp.tagline || '-'}\n` +
+        `จุดเด่นหลัก: ${(lp.keyBenefits || []).map(b => b.title).join(', ')}`
+      );
+      csvContent += `${summary},${desc},Story,High\n`;
+
+      // เพิ่มแถวสำหรับแต่ละ Key Benefit
+      (lp.keyBenefits || []).forEach(b => {
+        const s = escapeCsv(`[IREBA - Landing Page] Benefit: ${b.title}`);
+        const d = escapeCsv(`หัวข้อ: ${b.title}\nรายละเอียด: ${b.description}`);
+        csvContent += `${s},${d},Story,Medium\n`;
+      });
+    }
+
+    // 3. เพิ่มแถวข้อมูลจาก Quick Quote Validation Rules
+    if (requirements.quickQuote && requirements.quickQuote.validationRules) {
+      const rules = requirements.quickQuote.validationRules;
+      Object.keys(rules).forEach(field => {
+        const item = rules[field];
+        const summary = escapeCsv(`[IREBA - Quick Quote] Input: ${field} Validation`);
+        const desc = escapeCsv(
+          `คำอธิบาย: กฎการตรวจสอบข้อมูลรับเข้าของ ${field}\n` +
+          `ขีดจำกัดตัวแปร: Min ${item.min} - Max ${item.max} (${item.unit || 'N/A'})\n` +
+          `ชนิดข้อมูล: ${item.dataType || 'N/A'}\n` +
+          `ข้อความแจ้งเตือน: ${item.errorMessage || 'N/A'}`
+        );
+        csvContent += `${summary},${desc},Story,Medium\n`;
+      });
+    }
+
+    // 4. เพิ่มแถวข้อมูลจาก Product Calculation Formulas
+    if (requirements.productCalculation && requirements.productCalculation.formulas) {
+      const formulas = requirements.productCalculation.formulas;
+      Object.keys(formulas).forEach(calcName => {
+        const formulaStr = formulas[calcName];
+        const summary = escapeCsv(`[IREBA - Calculation] ${calcName} Formula Implementation`);
+        const desc = escapeCsv(
+          `สูตรประมวลผล: ${formulaStr}\n` +
+          `กรุณาเขียนโปรแกรมคำนวณเบี้ยประกันหลังบ้านตามหลักคณิตศาสตร์ประกันภัยสูตรนี้`
+        );
+        csvContent += `${summary},${desc},Task,High\n`;
+      });
+    }
+
+    // 5. เพิ่มแถวข้อมูลจาก Sale Proposal & Compliance
+    if (requirements.saleProposal) {
+      const sp = requirements.saleProposal;
+      const tb = sp.taxBenefit || {};
+      const cd = sp.complianceDisclaimer || {};
+
+      const taxSummary = escapeCsv(`[IREBA - Sale Proposal] Tax Benefit Deduction Logic`);
+      const taxDesc = escapeCsv(
+        `ขีดจำกัดสิทธิ์ลดหย่อนสูงสุด: ${tb.maxDeductionLimit || '-'} บาท\n` +
+        `สูตรตรรกะ: ${tb.ruleDescription || '-'}`
+      );
+      csvContent += `${taxSummary},${taxDesc},Story,Medium\n`;
+
+      const compSummary = escapeCsv(`[IREBA - Compliance] Legal Disclaimer (${cd.sectionReference || 'ม.865'})`);
+      const compDesc = escapeCsv(`อ้างอิง: ${cd.sectionReference || '-'}\nข้อความคำเตือน: ${cd.disclaimerText || '-'}`);
+      csvContent += `${compSummary},${compDesc},Task,Low\n`;
+    }
+
+    // 6. ตั้งค่าหัวเรื่องสำหรับบังคับดาวน์โหลดไฟล์
+    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+    res.setHeader('Content-Disposition', `attachment; filename=JIRA_Import_${projectId}.csv`);
+
+    // บรรจุ byte order mark (BOM) เพื่อให้ Microsoft Excel อ่านภาษาไทยได้ถูกต้อง
+    return res.status(200).send('\uFEFF' + csvContent);
+
+  } catch (error) {
+    console.error("เกิดข้อผิดพลาดในการส่งออก JIRA CSV:", error);
+    return res.status(500).send("ระบบขัดข้องในการสร้างไฟล์ส่งออก");
+  }
+}
+
+/**
+ * Controller สำหรับส่งออกข้อกำหนดเป็น Word Document (HTML → .doc with MIME trick)
+ */
+function exportWordDocController(req, res) {
+  const { projectId } = req.params;
+
+  try {
+    const projects = readProjects();
+    const project = projects.find(p => p.projectId === projectId);
+
+    if (!project) {
+      return res.status(404).json({ success: false, message: "ไม่พบโครงการที่อ้างอิง" });
+    }
+
+    if (project.status !== 'approved') {
+      return res.status(400).json({ success: false, message: "โครงการนี้ยังไม่ได้รับการอนุมัติขั้นสุดท้าย" });
+    }
+
+    const reqs = project.extractedRequirements || {};
+    const createdDate = new Date(project.createdAt).toLocaleDateString('th-TH', { year: 'numeric', month: 'long', day: 'numeric' });
+    const approvedDate = project.approvedAt ? new Date(project.approvedAt).toLocaleDateString('th-TH', { year: 'numeric', month: 'long', day: 'numeric' }) : '-';
+
+    // สร้างเนื้อหา HTML สำหรับ Word
+    let html = `
+<!DOCTYPE html>
+<html xmlns:o="urn:schemas-microsoft-com:office:office"
+      xmlns:w="urn:schemas-microsoft-com:office:word"
+      xmlns="http://www.w3.org/TR/REC-html40">
+<head>
+  <meta charset="utf-8">
+  <title>IREBA Insurance Specification: ${project.projectName}</title>
+  <style>
+    body { font-family: 'TH SarabunPSK', 'Angsana New', 'Cordia New', Arial, sans-serif; font-size: 14pt; margin: 2cm; color: #1a1a2e; }
+    h1 { font-size: 24pt; color: #0d3b7a; border-bottom: 3px solid #0d3b7a; padding-bottom: 8pt; }
+    h2 { font-size: 18pt; color: #1a3f7a; margin-top: 24pt; border-left: 6px solid #3b82f6; padding-left: 10pt; }
+    h3 { font-size: 14pt; color: #2d5089; margin-top: 16pt; }
+    p, li { font-size: 13pt; line-height: 1.6; }
+    table { border-collapse: collapse; width: 100%; margin: 12pt 0; font-size: 12pt; }
+    th { background-color: #0d3b7a; color: white; padding: 8pt 10pt; text-align: left; font-weight: bold; }
+    td { border: 1px solid #c0cfe0; padding: 7pt 10pt; vertical-align: top; }
+    tr:nth-child(even) { background-color: #eef4fb; }
+    .meta-table td { border: none; padding: 4pt 8pt; }
+    .label { font-weight: bold; color: #555; width: 220pt; }
+    blockquote { background: #fef9e7; border-left: 4px solid #f39c12; padding: 8pt 12pt; margin: 8pt 0; font-style: italic; }
+    .stamp { text-align: center; padding: 12pt; border: 3px double #27ae60; color: #27ae60; font-size: 16pt; font-weight: bold; display: inline-block; margin: 12pt 0; }
+    hr { border: none; border-top: 1px solid #c0cfe0; margin: 18pt 0; }
+  </style>
+</head>
+<body>
+
+<h1>รายงานข้อกำหนดความต้องการประกันภัย (IREBA Specification)</h1>
+<h2 style="border:none; font-size:16pt;">${project.projectName} (${project.projectId})</h2>
+
+<table class="meta-table">
+  <tr><td class="label">วันที่สร้างโครงการ:</td><td>${createdDate}</td></tr>
+  <tr><td class="label">วันที่อนุมัติขั้นสุดท้าย:</td><td>${approvedDate}</td></tr>
+  <tr><td class="label">สถานะเอกสาร:</td><td><strong>✅ APPROVED FINAL SPECIFICATION</strong></td></tr>
+  <tr><td class="label">คำอธิบายโครงการ:</td><td>${project.description || '-'}</td></tr>
+</table>
+
+<div class="stamp">✅ APPROVED ✅</div>
+<hr>
+`;
+
+    // Section 1: Landing Page
+    if (reqs.landingPage) {
+      const lp = reqs.landingPage;
+      html += `<h2>1. ข้อมูลประชาสัมพันธ์และจุดเด่นหลัก (Marketing &amp; Identity)</h2>`;
+      html += `<table class="meta-table">`;
+      html += `<tr><td class="label">ชื่อทางการค้า (Product Name):</td><td><strong>${lp.productName || '-'}</strong></td></tr>`;
+      html += `<tr><td class="label">คำสโลแกน (Tagline):</td><td><em>${lp.tagline || '-'}</em></td></tr>`;
+      html += `</table>`;
+      html += `<h3>ผลประโยชน์และจุดขายสำคัญ (Key Benefits)</h3>`;
+      html += `<table><thead><tr><th>หัวข้อ (Title)</th><th>รายละเอียด (Description)</th></tr></thead><tbody>`;
+      (lp.keyBenefits || []).forEach(b => {
+        html += `<tr><td><strong>${b.title || ''}</strong></td><td>${b.description || ''}</td></tr>`;
+      });
+      html += `</tbody></table><hr>`;
+    }
+
+    // Section 2: Quick Quote
+    if (reqs.quickQuote && reqs.quickQuote.validationRules) {
+      html += `<h2>2. กฎการตรวจสอบข้อมูลรับเข้า Quick Quote (Validation Rules)</h2>`;
+      html += `<table><thead><tr><th>ตัวแปร</th><th>Min</th><th>Max</th><th>ประเภทข้อมูล</th><th>หน่วย</th><th>ข้อความแจ้งเตือน</th></tr></thead><tbody>`;
+      const rules = reqs.quickQuote.validationRules;
+      Object.keys(rules).forEach((k, i) => {
+        const r = rules[k];
+        html += `<tr><td><strong>${k}</strong></td><td>${r.min}</td><td>${r.max}</td><td>${r.dataType || ''}</td><td>${r.unit || ''}</td><td>${r.errorMessage || ''}</td></tr>`;
+      });
+      html += `</tbody></table><hr>`;
+    }
+
+    // Section 3: Product Calculation
+    if (reqs.productCalculation) {
+      const pc = reqs.productCalculation;
+      const f = pc.formulas || {};
+      html += `<h2>3. กลไกคำนวณเบี้ยประกันภัย (Actuarial Calculation Engine)</h2>`;
+      html += `<h3>สูตรความสัมพันธ์เชิงคณิตศาสตร์อ้างอิง:</h3>`;
+      html += `<table class="meta-table">`;
+      html += `<tr><td class="label">เบี้ยประกันภัยฐาน (basePremium):</td><td><code>${f.basePremium || '-'}</code></td></tr>`;
+      html += `<tr><td class="label">ส่วนลดเบี้ยประกันภัย (discount):</td><td><code>${f.discount || '-'}</code></td></tr>`;
+      html += `<tr><td class="label">เบี้ยประกันภัยสุทธิ (totalPremium):</td><td><code>${f.totalPremium || '-'}</code></td></tr>`;
+      html += `</table>`;
+
+      html += `<h3>ตารางอัตราส่วนลดทุนประกัน (Discount Tiers):</h3>`;
+      html += `<table><thead><tr><th>ทุนประกันขั้นต่ำ (Min SA)</th><th>ทุนประกันสูงสุด (Max SA)</th><th>ส่วนลดต่อทุน 1,000 บาท</th></tr></thead><tbody>`;
+      (pc.discountTiers || []).forEach(t => {
+        html += `<tr><td>${Number(t.minSA).toLocaleString()}</td><td>${Number(t.maxSA).toLocaleString()}</td><td>${t.rateDiscount}</td></tr>`;
+      });
+      html += `</tbody></table>`;
+
+      html += `<h3>ตารางสัมประสิทธิ์อัตราเบี้ยประกันรายปี (Premium Rate Matrix):</h3>`;
+      html += `<table><thead><tr><th>อายุ</th><th>แผน 5 ปี</th><th>แผน 10 ปี</th><th>แผน 15 ปี</th><th>แผน 99 ปี</th></tr></thead><tbody>`;
+      Object.keys(pc.premiumRateMatrix || {}).forEach(age => {
+        const m = pc.premiumRateMatrix[age];
+        html += `<tr><td><strong>${age}</strong></td><td>${m.term_5}</td><td>${m.term_10}</td><td>${m.term_15}</td><td>${m.term_99}</td></tr>`;
+      });
+      html += `</tbody></table><hr>`;
+    }
+
+    // Section 4: Sale Proposal
+    if (reqs.saleProposal) {
+      const sp = reqs.saleProposal;
+      const proj = sp.benefitProjectionRules || {};
+      const tb = sp.taxBenefit || {};
+      const cd = sp.complianceDisclaimer || {};
+
+      html += `<h2>4. ตารางมูลค่าเวนคืนและข้อกฎหมาย (Benefit Projection &amp; Compliance)</h2>`;
+      html += `<h3>ตารางอัตรามูลค่าเวนคืนกรมธรรม์ต่อทุน 1,000 บาท:</h3>`;
+      html += `<table><thead><tr><th>ปีกรมธรรม์</th><th>อายุ 1 ปี</th><th>อายุ 30 ปี</th><th>อายุ 44 ปี</th><th>อายุ 60 ปี</th></tr></thead><tbody>`;
+      (proj.cashValueRates || []).forEach(v => {
+        const r = v.ratesByAge || {};
+        html += `<tr><td><strong>ปีที่ ${v.policyYear}</strong></td><td>${r.age_1}</td><td>${r.age_30}</td><td>${r.age_44}</td><td>${r.age_60}</td></tr>`;
+      });
+      html += `</tbody></table>`;
+
+      html += `<h3>สิทธิ์ประโยชน์ลดหย่อนภาษี:</h3>`;
+      html += `<table class="meta-table">`;
+      html += `<tr><td class="label">ขีดจำกัดสูงสุด:</td><td>${Number(tb.maxDeductionLimit || 0).toLocaleString()} บาท</td></tr>`;
+      html += `<tr><td class="label">สูตรตรรกะ:</td><td><code>${tb.ruleDescription || '-'}</code></td></tr>`;
+      html += `</table>`;
+
+      html += `<h3>ข้อกำหนดทางกฎหมายและคำเตือน:</h3>`;
+      html += `<table class="meta-table">`;
+      html += `<tr><td class="label">อ้างอิงกฎหมาย:</td><td><em>${cd.sectionReference || '-'}</em></td></tr>`;
+      html += `</table>`;
+      html += `<blockquote>${cd.disclaimerText || ''}</blockquote>`;
+    }
+
+    html += `
+</body>
+</html>`;
+
+    res.setHeader('Content-Type', 'application/msword; charset=utf-8');
+    res.setHeader('Content-Disposition', `attachment; filename=IREBA_Spec_${projectId}.doc`);
+    return res.status(200).send(html);
+
+  } catch (error) {
+    console.error("เกิดข้อผิดพลาดในการส่งออก Word Document:", error);
+    return res.status(500).send("ระบบขัดข้องในการสร้างไฟล์ Word Document");
+  }
+}
+
 module.exports = {
   generateNextProjectId,
   createProjectController,
   getProjectsController,
-  getProjectByIdController
+  getProjectByIdController,
+  approveProjectController,
+  exportJiraCsvController,
+  exportWordDocController
 };

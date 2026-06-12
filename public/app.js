@@ -6,6 +6,7 @@ document.addEventListener('DOMContentLoaded', () => {
     pricingValuation: null,
     compliance: null
   };
+  let currentProjectData = null;
 
   // Screen Elements
   const screen1 = document.getElementById('screen-1');
@@ -67,6 +68,19 @@ document.addEventListener('DOMContentLoaded', () => {
   const loadingStatusText = document.getElementById('loading-status-text');
   const loadingTitleText = document.getElementById('loading-title-text');
   const analysisCards = document.querySelectorAll('.analysis-card');
+
+  // Screen 4 Selectors
+  const screen4 = document.getElementById('screen-4');
+  const projectInfoSubtitleS4 = document.getElementById('project-info-subtitle-s4');
+  const screen4ApprovedBadge = document.getElementById('screen4-approved-badge');
+  const btnBackToS3OrS1 = document.getElementById('btn-back-to-s3-or-s1');
+  const btnExportJson = document.getElementById('btn-export-json');
+  const btnExportMd = document.getElementById('btn-export-md');
+  const btnExportJira = document.getElementById('btn-export-jira');
+  const btnExportWord = document.getElementById('btn-export-word');
+  const btnApproveSpec = document.getElementById('btn-approve-spec');
+  const tabButtons = document.querySelectorAll('#tabs-bar-s4 .tab-link');
+  const tabPanels = document.querySelectorAll('.tab-content-panel');
 
   // -------------------------------------------------------------
   // Custom Alert Modal Logic
@@ -156,6 +170,7 @@ document.addEventListener('DOMContentLoaded', () => {
     screen1.style.display = 'none';
     screen2.style.display = 'none';
     screen3.style.display = 'none';
+    screen4.style.display = 'none';
 
     // Reset step styles
     step1.className = 'step-item';
@@ -178,6 +193,13 @@ document.addEventListener('DOMContentLoaded', () => {
       step2.classList.add('completed');
       step3.classList.add('active');
       loadScreen3Details();
+    } else if (screenNumber === 4) {
+      screen4.style.display = 'block';
+      step1.classList.add('completed');
+      step2.classList.add('completed');
+      step3.classList.add('completed');
+      step4.classList.add('active');
+      loadScreen4Details();
     }
   };
 
@@ -243,6 +265,19 @@ document.addEventListener('DOMContentLoaded', () => {
             const statusClass = p.status || 'initialized';
             const statusLabel = statusTextMap[p.status] || 'ตั้งต้น';
 
+            // กำหนด label + สไตล์ปุ่มตามสถานะ
+            let btnLabel, btnStyle;
+            if (p.status === 'approved') {
+              btnLabel = 'ดูรายงาน ✅';
+              btnStyle = 'padding: 0.4rem 0.8rem; font-size: 0.85rem; min-width: auto; margin-top: 0; background: linear-gradient(135deg,#059669,#047857); color:white; border:none;';
+            } else if (p.status === 'analyzed') {
+              btnLabel = 'ดูผลลัพธ์ 📊';
+              btnStyle = 'padding: 0.4rem 0.8rem; font-size: 0.85rem; min-width: auto; margin-top: 0; background: linear-gradient(135deg,#2563eb,#1d4ed8); color:white; border:none;';
+            } else {
+              btnLabel = 'เปิดดำเนินการ ➜';
+              btnStyle = 'padding: 0.4rem 0.8rem; font-size: 0.85rem; min-width: auto; margin-top: 0;';
+            }
+
             return `
               <tr>
                 <td style="padding: 1rem; font-weight: bold; color: var(--color-primary-navy);">${p.projectId}</td>
@@ -257,8 +292,8 @@ document.addEventListener('DOMContentLoaded', () => {
                   <span class="status-pill ${statusClass}">${statusLabel}</span>
                 </td>
                 <td style="padding: 1rem; text-align: right;">
-                  <button class="btn btn-secondary btn-open-project" data-projectid="${p.projectId}" data-status="${p.status}" style="padding: 0.4rem 0.8rem; font-size: 0.85rem; min-width: auto; margin-top: 0;">
-                    เปิดดำเนินการ ➜
+                  <button class="btn btn-secondary btn-open-project" data-projectid="${p.projectId}" data-status="${p.status}" style="${btnStyle}">
+                    ${btnLabel}
                   </button>
                 </td>
               </tr>
@@ -293,13 +328,8 @@ document.addEventListener('DOMContentLoaded', () => {
     } else if (status === 'documents_uploaded') {
       showScreen(3);
     } else if (status === 'analyzed' || status === 'approved') {
-      // สำหรับสเตปถัดไป Screen 4 แต่ตอนนี้ส่งไป Screen 3 ก่อน เพื่อดูผลลัพธ์หรือรันซ้ำ
-      showScreen(3);
-      showModalAlert(
-        'การวิเคราะห์เสร็จสิ้น', 
-        `โครงการ ${projectId} ได้ทำการสกัดวิเคราะห์ AI เรียบร้อยแล้ว (คุณสามารถเลือกหัวข้อเพื่อวิเคราะห์ใหม่ หรือรอพัฒนาหน้าตรวจสอบสเปกในขั้นตอนถัดไป)`, 
-        '✅'
-      );
+      // ไปหน้าจอ 4 โดยตรงเพื่อดูผลลัพธ์ที่วิเคราะห์ไว้แล้ว
+      showScreen(4);
     } else {
       showScreen(2);
     }
@@ -765,8 +795,8 @@ document.addEventListener('DOMContentLoaded', () => {
           'ระบบทำการวิเคราะห์สกัดข้อกำหนดความต้องการด้วย Gemini AI เสร็จสิ้นทั้งหมดเรียบร้อยแล้ว!', 
           '🎉'
         );
-        // พาผู้ใช้กลับแดชบอร์ดโครงการ เพื่อเห็นสถานะโครงการเปลี่ยนเป็นวิเคราะห์แล้ว
-        showScreen(1);
+        // พาผู้ใช้ไปยังหน้าจอที่ 4 เพื่อตรวจสอบและแก้ไขสเปกทันที
+        showScreen(4);
       }, 1000);
 
     } catch (err) {
@@ -786,10 +816,532 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   // -------------------------------------------------------------
+  // Screen 4: BSA Editor & Approval Logic
+  // -------------------------------------------------------------
+  tabButtons.forEach(btn => {
+    btn.addEventListener('click', () => {
+      tabButtons.forEach(b => b.classList.remove('active'));
+      tabPanels.forEach(p => p.classList.remove('active'));
+
+      btn.classList.add('active');
+      const targetPanel = document.getElementById(btn.getAttribute('data-tab'));
+      if (targetPanel) {
+        targetPanel.classList.add('active');
+      }
+    });
+  });
+
+  const loadScreen4Details = async () => {
+    if (!currentProjectId) {
+      showScreen(1);
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/projects/${currentProjectId}`);
+      const data = await response.json();
+
+      if (response.ok && data.success) {
+        currentProjectData = data.project;
+        projectInfoSubtitleS4.innerHTML = `โครงการ: <strong>${currentProjectData.projectName}</strong> (${currentProjectData.projectId})`;
+        
+        const reqs = currentProjectData.extractedRequirements || {};
+        const isApproved = currentProjectData.status === 'approved';
+
+        // 1. ตรวจสอบสถานะการเรนเดอร์แท็บ (ซ่อนแท็บที่ไม่มีข้อมูล)
+        const sections = ['landingPage', 'quickQuote', 'productCalculation', 'saleProposal'];
+        let firstVisibleTab = null;
+
+        sections.forEach(sec => {
+          const tabBtn = document.getElementById(`tab-btn-${sec}`);
+          const panel = document.getElementById(`tab-${sec}`);
+          
+          if (reqs[sec]) {
+            tabBtn.style.display = 'inline-block';
+            if (!firstVisibleTab) firstVisibleTab = sec;
+          } else {
+            tabBtn.style.display = 'none';
+            panel.classList.remove('active');
+          }
+        });
+
+        // เปิดเฉพาะแท็บแรกที่มีข้อมูลจริง
+        if (firstVisibleTab) {
+          tabButtons.forEach(b => {
+            b.classList.remove('active');
+            if (b.getAttribute('data-tab') === `tab-${firstVisibleTab}`) {
+              b.classList.add('active');
+            }
+          });
+          tabPanels.forEach(p => {
+            p.classList.remove('active');
+            if (p.id === `tab-${firstVisibleTab}`) {
+              p.classList.add('active');
+            }
+          });
+        }
+
+        // 2. ตั้งค่าแก้ไขข้อมูลและ Badges อ้างอิงตามสถานะอนุมัติ (Lock state)
+        if (isApproved) {
+          screen4ApprovedBadge.style.display = 'inline-block';
+          btnApproveSpec.textContent = 'Approved ✓';
+          btnApproveSpec.disabled = true;
+          btnExportJson.style.display = 'inline-flex';
+          btnExportMd.style.display = 'inline-flex';
+          btnExportJira.style.display = 'inline-flex';
+          btnExportWord.style.display = 'inline-flex';
+        } else {
+          screen4ApprovedBadge.style.display = 'none';
+          btnApproveSpec.textContent = 'Approve Final Spec ✓';
+          btnApproveSpec.disabled = false;
+          btnExportJson.style.display = 'none';
+          btnExportMd.style.display = 'none';
+          btnExportJira.style.display = 'none';
+          btnExportWord.style.display = 'none';
+        }
+
+        // กำหนดการอนุญาตพิมพ์แก้ไข (contenteditable)
+        const canEdit = !isApproved;
+
+        // 3. เรนเดอร์ข้อมูล Tab 1: Landing Page
+        if (reqs.landingPage) {
+          const lp = reqs.landingPage;
+          const valProductName = document.getElementById('val-productName');
+          const valTagline = document.getElementById('val-tagline');
+          
+          valProductName.textContent = lp.productName || '';
+          valProductName.setAttribute('contenteditable', String(canEdit));
+          
+          valTagline.textContent = lp.tagline || '';
+          valTagline.setAttribute('contenteditable', String(canEdit));
+
+          const tbody = document.querySelector('#table-keyBenefits tbody');
+          tbody.innerHTML = (lp.keyBenefits || []).map(b => `
+            <tr>
+              <td contenteditable="${canEdit}" style="font-weight: 500; border: 1px dashed ${canEdit ? 'var(--color-secondary-indigo)' : 'var(--color-border-light)'};">${b.title || ''}</td>
+              <td contenteditable="${canEdit}" style="border: 1px dashed ${canEdit ? 'var(--color-secondary-indigo)' : 'var(--color-border-light)'};">${b.description || ''}</td>
+            </tr>
+          `).join('');
+        }
+
+        // 4. เรนเดอร์ข้อมูล Tab 2: Quick Quote
+        if (reqs.quickQuote && reqs.quickQuote.validationRules) {
+          const rules = reqs.quickQuote.validationRules;
+          const tbody = document.querySelector('#table-validationRules tbody');
+          
+          tbody.innerHTML = Object.keys(rules).map(k => {
+            const r = rules[k];
+            return `
+              <tr>
+                <td style="font-weight: bold; color: var(--color-primary-navy);">${k}</td>
+                <td contenteditable="${canEdit}" style="border: 1px dashed ${canEdit ? 'var(--color-secondary-indigo)' : 'var(--color-border-light)'};">${r.min}</td>
+                <td contenteditable="${canEdit}" style="border: 1px dashed ${canEdit ? 'var(--color-secondary-indigo)' : 'var(--color-border-light)'};">${r.max}</td>
+                <td contenteditable="${canEdit}" style="border: 1px dashed ${canEdit ? 'var(--color-secondary-indigo)' : 'var(--color-border-light)'};">${r.dataType || ''}</td>
+                <td contenteditable="${canEdit}" style="border: 1px dashed ${canEdit ? 'var(--color-secondary-indigo)' : 'var(--color-border-light)'};">${r.unit || ''}</td>
+                <td contenteditable="${canEdit}" style="border: 1px dashed ${canEdit ? 'var(--color-secondary-indigo)' : 'var(--color-border-light)'};">${r.errorMessage || ''}</td>
+              </tr>
+            `;
+          }).join('');
+        }
+
+        // 5. เรนเดอร์ข้อมูล Tab 3: Actuarial Calculation
+        if (reqs.productCalculation) {
+          const pc = reqs.productCalculation;
+          const formulas = pc.formulas || {};
+          
+          ['basePremium', 'discount', 'totalPremium'].forEach(fKey => {
+            const el = document.getElementById(`val-formula-${fKey}`);
+            el.textContent = formulas[fKey] || '';
+            el.setAttribute('contenteditable', String(canEdit));
+          });
+
+          // ตารางเกณฑ์ส่วนลด
+          const tbodyDiscount = document.querySelector('#table-discountTiers tbody');
+          tbodyDiscount.innerHTML = (pc.discountTiers || []).map(t => `
+            <tr>
+              <td contenteditable="${canEdit}" style="border: 1px dashed ${canEdit ? 'var(--color-secondary-indigo)' : 'var(--color-border-light)'};">${t.minSA}</td>
+              <td contenteditable="${canEdit}" style="border: 1px dashed ${canEdit ? 'var(--color-secondary-indigo)' : 'var(--color-border-light)'};">${t.maxSA}</td>
+              <td contenteditable="${canEdit}" style="border: 1px dashed ${canEdit ? 'var(--color-secondary-indigo)' : 'var(--color-border-light)'};">${t.rateDiscount}</td>
+            </tr>
+          `).join('');
+
+          // ตารางเบี้ยประกันภัยรายปี
+          const tbodyRates = document.querySelector('#table-premiumRateMatrix tbody');
+          const matrix = pc.premiumRateMatrix || {};
+          tbodyRates.innerHTML = Object.keys(matrix).map(age => {
+            const m = matrix[age];
+            return `
+              <tr>
+                <td style="font-weight: bold; color: var(--color-primary-navy);">${age}</td>
+                <td contenteditable="${canEdit}" style="border: 1px dashed ${canEdit ? 'var(--color-secondary-indigo)' : 'var(--color-border-light)'};">${m.term_5}</td>
+                <td contenteditable="${canEdit}" style="border: 1px dashed ${canEdit ? 'var(--color-secondary-indigo)' : 'var(--color-border-light)'};">${m.term_10}</td>
+                <td contenteditable="${canEdit}" style="border: 1px dashed ${canEdit ? 'var(--color-secondary-indigo)' : 'var(--color-border-light)'};">${m.term_15}</td>
+                <td contenteditable="${canEdit}" style="border: 1px dashed ${canEdit ? 'var(--color-secondary-indigo)' : 'var(--color-border-light)'};">${m.term_99}</td>
+              </tr>
+            `;
+          }).join('');
+        }
+
+        // 6. เรนเดอร์ข้อมูล Tab 4: Sale Proposal & Compliance
+        if (reqs.saleProposal) {
+          const sp = reqs.saleProposal;
+          const proj = sp.benefitProjectionRules || {};
+          
+          // ตารางมูลค่าเวนคืน
+          const tbodyCV = document.querySelector('#table-cashValueRates tbody');
+          tbodyCV.innerHTML = (proj.cashValueRates || []).map(v => {
+            const rates = v.ratesByAge || {};
+            return `
+              <tr>
+                <td style="font-weight: bold; color: var(--color-primary-navy);">${v.policyYear}</td>
+                <td contenteditable="${canEdit}" style="border: 1px dashed ${canEdit ? 'var(--color-secondary-indigo)' : 'var(--color-border-light)'};">${rates.age_1}</td>
+                <td contenteditable="${canEdit}" style="border: 1px dashed ${canEdit ? 'var(--color-secondary-indigo)' : 'var(--color-border-light)'};">${rates.age_30}</td>
+                <td contenteditable="${canEdit}" style="border: 1px dashed ${canEdit ? 'var(--color-secondary-indigo)' : 'var(--color-border-light)'};">${rates.age_44}</td>
+                <td contenteditable="${canEdit}" style="border: 1px dashed ${canEdit ? 'var(--color-secondary-indigo)' : 'var(--color-border-light)'};">${rates.age_60}</td>
+              </tr>
+            `;
+          }).join('');
+
+          // ภาษีและ disclaimer
+          const taxLimit = document.getElementById('val-tax-limit');
+          const taxDesc = document.getElementById('val-tax-desc');
+          const compRef = document.getElementById('val-compliance-ref');
+          const compText = document.getElementById('val-compliance-text');
+
+          const tb = sp.taxBenefit || {};
+          taxLimit.textContent = tb.maxDeductionLimit || '';
+          taxLimit.setAttribute('contenteditable', String(canEdit));
+          taxDesc.textContent = tb.ruleDescription || '';
+          taxDesc.setAttribute('contenteditable', String(canEdit));
+
+          const cd = sp.complianceDisclaimer || {};
+          compRef.textContent = cd.sectionReference || '';
+          compRef.setAttribute('contenteditable', String(canEdit));
+          compText.textContent = cd.disclaimerText || '';
+          compText.setAttribute('contenteditable', String(canEdit));
+        }
+
+      } else {
+        localStorage.removeItem('currentProjectId');
+        currentProjectId = null;
+        showScreen(1);
+      }
+    } catch (err) {
+      console.error(err);
+      showModalAlert("ดึงข้อมูลล้มเหลว", "ไม่สามารถดึงรายละเอียดข้อกำหนดมาแสดงได้", "❌");
+    }
+  };
+
+  // ปุ่มกดย้อนกลับจากหน้า 4
+  btnBackToS3OrS1.addEventListener('click', () => {
+    if (currentProjectData && currentProjectData.status === 'approved') {
+      // หากอนุมัติเสร็จสมบูรณ์แล้ว ให้ถอยกลับไปหน้า Dashboard หลักเลย
+      localStorage.removeItem('currentProjectId');
+      currentProjectId = null;
+      showScreen(1);
+    } else {
+      // หากยังไม่อนุมัติ ถอยกลับไปหน้าเลือก prompt สแกน AI
+      showScreen(3);
+    }
+  });
+
+  // รวบรวมข้อมูลแก้ไขจากกล่องตารางข้อความ
+  const collectScreen4Requirements = () => {
+    const reqs = {};
+    const origReqs = currentProjectData.extractedRequirements || {};
+
+    // 1. Landing Page
+    if (origReqs.landingPage) {
+      const keyBenefits = [];
+      document.querySelectorAll('#table-keyBenefits tbody tr').forEach(tr => {
+        const tds = tr.querySelectorAll('td');
+        if (tds.length >= 2) {
+          keyBenefits.push({
+            title: tds[0].textContent.trim(),
+            description: tds[1].textContent.trim()
+          });
+        }
+      });
+      reqs.landingPage = {
+        productName: document.getElementById('val-productName').textContent.trim(),
+        tagline: document.getElementById('val-tagline').textContent.trim(),
+        keyBenefits
+      };
+    }
+
+    // 2. Quick Quote
+    if (origReqs.quickQuote) {
+      const validationRules = {};
+      document.querySelectorAll('#table-validationRules tbody tr').forEach(tr => {
+        const tds = tr.querySelectorAll('td');
+        if (tds.length >= 6) {
+          const varName = tds[0].textContent.trim();
+          validationRules[varName] = {
+            min: parseInt(tds[1].textContent.trim(), 10) || 0,
+            max: parseInt(tds[2].textContent.trim(), 10) || 0,
+            dataType: tds[3].textContent.trim(),
+            unit: tds[4].textContent.trim(),
+            errorMessage: tds[5].textContent.trim()
+          };
+        }
+      });
+      reqs.quickQuote = { validationRules };
+    }
+
+    // 3. Product Calculation
+    if (origReqs.productCalculation) {
+      const discountTiers = [];
+      document.querySelectorAll('#table-discountTiers tbody tr').forEach(tr => {
+        const tds = tr.querySelectorAll('td');
+        if (tds.length >= 3) {
+          discountTiers.push({
+            minSA: parseFloat(tds[0].textContent.trim()) || 0,
+            maxSA: parseFloat(tds[1].textContent.trim()) || 0,
+            rateDiscount: parseFloat(tds[2].textContent.trim()) || 0
+          });
+        }
+      });
+
+      const premiumRateMatrix = {};
+      document.querySelectorAll('#table-premiumRateMatrix tbody tr').forEach(tr => {
+        const tds = tr.querySelectorAll('td');
+        if (tds.length >= 5) {
+          const age = tds[0].textContent.trim();
+          premiumRateMatrix[age] = {
+            term_5: parseFloat(tds[1].textContent.trim()) || 0,
+            term_10: parseFloat(tds[2].textContent.trim()) || 0,
+            term_15: parseFloat(tds[3].textContent.trim()) || 0,
+            term_99: parseFloat(tds[4].textContent.trim()) || 0
+          };
+        }
+      });
+
+      reqs.productCalculation = {
+        formulas: {
+          basePremium: document.getElementById('val-formula-basePremium').textContent.trim(),
+          discount: document.getElementById('val-formula-discount').textContent.trim(),
+          totalPremium: document.getElementById('val-formula-totalPremium').textContent.trim()
+        },
+        discountTiers,
+        premiumRateMatrix
+      };
+    }
+
+    // 4. Sale Proposal
+    if (origReqs.saleProposal) {
+      const cashValueRates = [];
+      document.querySelectorAll('#table-cashValueRates tbody tr').forEach(tr => {
+        const tds = tr.querySelectorAll('td');
+        if (tds.length >= 5) {
+          cashValueRates.push({
+            policyYear: parseInt(tds[0].textContent.trim(), 10) || 0,
+            ratesByAge: {
+              age_1: parseFloat(tds[1].textContent.trim()) || 0,
+              age_30: parseFloat(tds[2].textContent.trim()) || 0,
+              age_44: parseFloat(tds[3].textContent.trim()) || 0,
+              age_60: parseFloat(tds[4].textContent.trim()) || 0
+            }
+          });
+        }
+      });
+
+      reqs.saleProposal = {
+        benefitProjectionRules: { cashValueRates },
+        taxBenefit: {
+          maxDeductionLimit: parseFloat(document.getElementById('val-tax-limit').textContent.trim()) || 0,
+          ruleDescription: document.getElementById('val-tax-desc').textContent.trim()
+        },
+        complianceDisclaimer: {
+          sectionReference: document.getElementById('val-compliance-ref').textContent.trim(),
+          disclaimerText: document.getElementById('val-compliance-text').textContent.trim()
+        }
+      };
+    }
+
+    return reqs;
+  };
+
+  // ยิงคำร้องอนุมัติโครงการสุดท้าย
+  btnApproveSpec.addEventListener('click', async () => {
+    if (!currentProjectId) return;
+    if (!confirm("ต้องการอนุมัติผลสรุปข้อกำหนดความต้องการนี้ใช่หรือไม่? เมื่อกดยืนยันแล้วจะไม่สามารถแก้ไขเนื้อหาในระบบได้อีก")) return;
+
+    btnApproveSpec.disabled = true;
+    btnBackToS3OrS1.disabled = true;
+
+    const updated = collectScreen4Requirements();
+
+    try {
+      const response = await fetch(`/api/projects/${currentProjectId}/approve`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ updatedRequirements: updated })
+      });
+      const data = await response.json();
+
+      if (response.ok && data.success) {
+        showModalAlert('อนุมัติสำเร็จ', 'บันทึกการตรวจสอบสเปกข้อกำหนดความต้องการและประทับอนุมัติสำเร็จเรียบร้อยแล้ว!', '🎉');
+        await loadScreen4Details(); // รีโหลดสเตตเพื่อปิดกล่องแก้ไขและเปิดใช้ดาวน์โหลด
+      } else {
+        showModalAlert('ผิดพลาด', data.message || 'ไม่สามารถทำอนุมัติโครงการได้สำเร็จ', '❌');
+        btnApproveSpec.disabled = false;
+        btnBackToS3OrS1.disabled = false;
+      }
+    } catch (err) {
+      console.error(err);
+      showModalAlert('การเชื่อมต่อขัดข้อง', 'การยืนยันอนุมัติล้มเหลวเนื่องจากการเชื่อมต่อขัดข้อง', '🌐');
+      btnApproveSpec.disabled = false;
+      btnBackToS3OrS1.disabled = false;
+    }
+  });
+
+  // ปุ่มส่งออกรายงาน JSON
+  btnExportJson.addEventListener('click', () => {
+    if (!currentProjectData) return;
+    
+    try {
+      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(currentProjectData, null, 2));
+      const downloadAnchor = document.createElement('a');
+      downloadAnchor.setAttribute("href", dataStr);
+      downloadAnchor.setAttribute("download", `${currentProjectData.projectId}-insurance-specification.json`);
+      document.body.appendChild(downloadAnchor);
+      downloadAnchor.click();
+      downloadAnchor.remove();
+    } catch (err) {
+      console.error(err);
+      showModalAlert('ดาวน์โหลดล้มเหลว', 'เกิดข้อผิดพลาดในการแปลงข้อมูลดาวน์โหลดไฟล์ JSON', '❌');
+    }
+  });
+
+  // ปุ่มส่งออกรายงาน Markdown
+  btnExportMd.addEventListener('click', () => {
+    if (!currentProjectData) return;
+
+    try {
+      const generateMarkdownReport = (project) => {
+        let md = `# Insurance Technical Specification: ${project.projectName} (${project.projectId})\n\n`;
+        md += `* **วันที่สร้างข้อกำหนด:** ${new Date(project.createdAt).toLocaleDateString('th-TH')}\n`;
+        if (project.approvedAt) {
+          md += `* **วันที่ได้รับการตรวจสอบอนุมัติ:** ${new Date(project.approvedAt).toLocaleDateString('th-TH')}\n`;
+        }
+        md += `* **สถานะความต้องการ:** APPROVED FINAL SPECIFICATION\n\n`;
+        md += `---\n\n`;
+
+        const reqs = project.extractedRequirements || {};
+
+        // 1. Landing Page
+        if (reqs.landingPage) {
+          md += `## 1. Marketing & Identity (ข้อมูลประชาสัมพันธ์และจุดเด่นหลัก)\n\n`;
+          md += `* **ชื่อทางการค้า (Product Name):** ${reqs.landingPage.productName || '-'}\n`;
+          md += `* **คำสโลแกน (Tagline):** ${reqs.landingPage.tagline || '-'}\n\n`;
+          md += `### ผลประโยชน์และจุดขายสำคัญ (Key Benefits):\n\n`;
+          (reqs.landingPage.keyBenefits || []).forEach(b => {
+            md += `* **หัวข้อเด่น: "${b.title}"**\n  *รายละเอียด:* ${b.description}\n`;
+          });
+          md += `\n---\n\n`;
+        }
+
+        // 2. Quick Quote
+        if (reqs.quickQuote && reqs.quickQuote.validationRules) {
+          md += `## 2. Quick Quote Form Input Validation Rules (กฎการตรวจสอบข้อมูลรับเข้า)\n\n`;
+          md += `| รหัสนำเข้า (Variable) | ต่ำสุด (Min) | สูงสุด (Max) | ประเภทข้อมูล (Data Type) | หน่วยวัด (Unit) | ข้อความแจ้งเตือนเมื่อหลุดเกณฑ์ (Error Message) |\n`;
+          md += `| :--- | :---: | :---: | :---: | :---: | :--- |\n`;
+          Object.keys(reqs.quickQuote.validationRules).forEach(k => {
+            const r = reqs.quickQuote.validationRules[k];
+            md += `| **${k}** | ${r.min} | ${r.max} | ${r.dataType} | ${r.unit} | ${r.errorMessage} |\n`;
+          });
+          md += `\n---\n\n`;
+        }
+
+        // 3. Calculation Formulas
+        if (reqs.productCalculation) {
+          const pc = reqs.productCalculation;
+          const formulas = pc.formulas || {};
+          md += `## 3. Product Calculation Engine & Math Formulas (กลไกคำนวณเบี้ยประกันภัย)\n\n`;
+          md += `### สูตรความสัมพันธ์เชิงคณิตศาสตร์อ้างอิง:\n`;
+          md += `* **เบี้ยประกันภัยฐาน (basePremium):** \`${formulas.basePremium || '-'}\`\n`;
+          md += `* **ส่วนลดเบี้ยประกันภัยหลัก (discount):** \`${formulas.discount || '-'}\`\n`;
+          md += `* **เบี้ยประกันภัยสุทธิต่อปี (totalPremium):** \`${formulas.totalPremium || '-'}\`\n\n`;
+
+          md += `### ตารางอัตราส่วนลดทุนประกันหลัก (Discount Tiers):\n\n`;
+          md += `| ทุนประกันประกันภัยขั้นต่ำ (Min SA) | ทุนประกันประกันภัยสูงสุด (Max SA) | ส่วนลดเบี้ยประกันภัยต่อทุน 1,000 บาท |\n`;
+          md += `| :--- | :--- | :---: |\n`;
+          (pc.discountTiers || []).forEach(t => {
+            md += `| ${t.minSA.toLocaleString()} บาท | ${t.maxSA.toLocaleString()} บาท | ${t.rateDiscount} บาท |\n`;
+          });
+          md += `\n`;
+
+          md += `### ตารางสัมประสิทธิ์อัตราเบี้ยประกันรายปีต่อทุน 1,000 บาท (Premium Rate Matrix - เพศชาย):\n\n`;
+          md += `| กลุ่มอายุ (Age) | แผนชำระเบี้ย 5 ปี | แผนชำระเบี้ย 10 ปี | แผนชำระเบี้ย 15 ปี | แผนชำระเบี้ย 99 ปี |\n`;
+          md += `| :--- | :---: | :---: | :---: | :---: |\n`;
+          Object.keys(pc.premiumRateMatrix || {}).forEach(age => {
+            const m = pc.premiumRateMatrix[age];
+            md += `| **อายุ ${age} ปี** | ${m.term_5} บาท | ${m.term_10} บาท | ${m.term_15} บาท | ${m.term_99} บาท |\n`;
+          });
+          md += `\n---\n\n`;
+        }
+
+        // 4. Sale Proposal
+        if (reqs.saleProposal) {
+          const sp = reqs.saleProposal;
+          const proj = sp.benefitProjectionRules || {};
+          md += `## 4. Benefit Surrender Projection & Legal Disclaimers (มูลค่าเวนคืนและข้อกฎหมาย)\n\n`;
+          
+          md += `### ตารางอัตรามูลค่าเวนคืนกรมธรรม์ต่อทุน 1,000 บาท (แผนชำระเบี้ย 10 ปี):\n\n`;
+          md += `| ถือครองกรมธรรม์ (Policy Year) | สิ้นปีที่อายุ 1 ปี | สิ้นปีที่อายุ 30 ปี | สิ้นปีที่อายุ 44 ปี | สิ้นปีที่อายุ 60 ปี |\n`;
+          md += `| :---: | :---: | :---: | :---: | :---: |\n`;
+          (proj.cashValueRates || []).forEach(v => {
+            const r = v.ratesByAge || {};
+            md += `| **ปีที่ ${v.policyYear}** | ${r.age_1} บาท | ${r.age_30} บาท | ${r.age_44} บาท | ${r.age_60} บาท |\n`;
+          });
+          md += `\n`;
+
+          const tb = sp.taxBenefit || {};
+          md += `### ข้อกำหนดสิทธิ์ประโยชน์ลดหย่อนภาษี (Tax Benefit Rules):\n`;
+          md += `* **ขีดจำกัดสิทธิ์ลดหย่อนสูงสุด:** ${tb.maxDeductionLimit ? tb.maxDeductionLimit.toLocaleString() : '-'} บาท\n`;
+          md += `* **สูตรตรรกะที่ใช้ประยุกต์:** \`${tb.ruleDescription || '-'}\`\n\n`;
+
+          const cd = sp.complianceDisclaimer || {};
+          md += `### คำแนะนำเตือนความสอดคล้อง (Compliance & Legal Disclaimers):\n`;
+          md += `* **อ้างอิงพระราชบัญญัติและประมวลกฎหมาย:** *${cd.sectionReference || '-'}*\n`;
+          md += `* **ข้อความคำเตือนคำแปลอย่างเป็นทางการ (ภาษาไทย):**\n  > ${cd.disclaimerText || '-'}\n`;
+        }
+
+        return md;
+      };
+
+      const mdText = generateMarkdownReport(currentProjectData);
+      const dataStr = "data:text/markdown;charset=utf-8," + encodeURIComponent(mdText);
+      const downloadAnchor = document.createElement('a');
+      downloadAnchor.setAttribute("href", dataStr);
+      downloadAnchor.setAttribute("download", `${currentProjectData.projectId}-insurance-specification.md`);
+      document.body.appendChild(downloadAnchor);
+      downloadAnchor.click();
+      downloadAnchor.remove();
+    } catch (err) {
+      console.error(err);
+      showModalAlert('ดาวน์โหลดล้มเหลว', 'เกิดข้อผิดพลาดในการจัดทำเอกสารวิศวกรรมแบบรูปธรรม Markdown', '❌');
+    }
+  });
+
+  // ปุ่มดาวน์โหลด JIRA CSV (server-side stream)
+  btnExportJira.addEventListener('click', () => {
+    if (!currentProjectId) return;
+    // เปิด URL โดยตรง เพื่อให้ browser ดาวน์โหลดไฟล์ผ่าน HTTP response stream
+    window.location.href = `/api/projects/${currentProjectId}/export/jira`;
+  });
+
+  // ปุ่มดาวน์โหลด Word Document (server-side stream)
+  btnExportWord.addEventListener('click', () => {
+    if (!currentProjectId) return;
+    window.location.href = `/api/projects/${currentProjectId}/export/word`;
+  });
+
+  // -------------------------------------------------------------
   // Application Startup Logic
   // -------------------------------------------------------------
   if (currentProjectId) {
-    // โหลดรายละเอียดโปรเจกต์เดิม เพื่อพิจารณาว่าควรไป Screen 2 หรือ 3
+    // โหลดรายละเอียดโปรเจกต์เดิม เพื่อพิจารณาว่าควรไป Screen 2, 3 หรือ 4
     const checkStartupProject = async () => {
       try {
         const response = await fetch(`/api/projects/${currentProjectId}`);
@@ -798,8 +1350,12 @@ document.addEventListener('DOMContentLoaded', () => {
           const status = data.project.status;
           if (status === 'initialized') {
             showScreen(2);
-          } else {
+          } else if (status === 'documents_uploaded') {
             showScreen(3);
+          } else if (status === 'analyzed' || status === 'approved') {
+            showScreen(4);
+          } else {
+            showScreen(2);
           }
         } else {
           localStorage.removeItem('currentProjectId');
